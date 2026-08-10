@@ -10,7 +10,7 @@ SvelteKit과 Capacitor로 만든 비트코인 전용 Watch Only Wallet입니다.
 - Legacy, Nested SegWit, Native SegWit, Taproot 주소 파생
 - Esplora 호환 API를 통한 수동/선택적 자동 동기화
 - PWA 서비스 워커 앱 셸 캐시
-- Capacitor 8 Android/iOS 프로젝트
+- Capacitor 8 Android/iOS 프로젝트와 Tauri 2 데스크톱 프로젝트
 - 비밀키 입력, 서명, 전송 기능이 의도적으로 없는 Watch Only 경계
 
 ## Route
@@ -70,6 +70,22 @@ npm run cap:ios
 ```
 
 Android 프로젝트는 `android/`, iOS 프로젝트는 `ios/`에 있습니다. 앱 식별자는 `io.axoneo.satsight`입니다.
+
+## Tauri 데스크톱
+
+개발 창을 실행합니다.
+
+```sh
+npm run tauri:dev
+```
+
+현재 운영체제용 설치 패키지를 생성합니다.
+
+```sh
+npm run tauri:build
+```
+
+Tauri 프로젝트는 `src-tauri/`에 있으며 Windows, macOS, Linux 번들 설정을 포함합니다. 외부 블록 탐색기 링크는 최소 권한의 opener 플러그인으로 시스템 브라우저에서 엽니다. 플랫폼별 패키징에는 해당 운영체제의 Tauri 시스템 의존성이 필요합니다.
 
 ## 보안 경계
 

@@ -4,12 +4,19 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import { formatSats, shortAddress } from '$lib/domain/bitcoin';
 	import { walletState } from '$lib/state/wallets.svelte';
+	import { openExternal } from '$lib/platform/external';
 	const transaction = $derived(walletState.transactions.find((item) => item.id === page.params.id));
 	const wallet = $derived(
 		transaction ? walletState.wallets.find((item) => item.id === transaction.walletId) : undefined
 	);
 	async function copy(value: string) {
 		await navigator.clipboard.writeText(value);
+	}
+	function openExplorer() {
+		if (!transaction) return;
+		const base =
+			wallet?.network === 'testnet' ? 'https://mempool.space/testnet' : 'https://mempool.space';
+		void openExternal(`${base}/tx/${transaction.txid}`);
 	}
 </script>
 
@@ -51,12 +58,8 @@
 				>
 			</div>
 		</section>
-		<a
-			class="button secondary full"
-			target="_blank"
-			rel="noreferrer"
-			href={`${wallet?.network === 'testnet' ? 'https://mempool.space/testnet' : 'https://mempool.space'}/tx/${transaction.txid}`}
-			><ExternalLink size={17} /> 블록 탐색기에서 보기</a
+		<button class="button secondary full" onclick={openExplorer}
+			><ExternalLink size={17} /> 블록 탐색기에서 보기</button
 		>
 	{/if}
 </main>

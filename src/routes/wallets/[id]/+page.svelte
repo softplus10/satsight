@@ -9,6 +9,7 @@
 	import { formatBtc, formatSats, shortAddress, walletDescriptor } from '$lib/domain/bitcoin';
 	import type { Wallet, WatchedAddress } from '$lib/domain/types';
 	import { walletState } from '$lib/state/wallets.svelte';
+	import { openExternal } from '$lib/platform/external';
 
 	let wallet = $state<Wallet>();
 	let addresses = $state<WatchedAddress[]>([]);
@@ -49,6 +50,13 @@
 		} catch (cause) {
 			syncMessage = cause instanceof Error ? cause.message : '동기화하지 못했습니다.';
 		}
+	}
+
+	function openExplorer() {
+		if (!wallet || !addresses[0]) return;
+		const base =
+			wallet.network === 'mainnet' ? 'https://mempool.space' : 'https://mempool.space/testnet';
+		void openExternal(`${base}/address/${addresses[0].address}`);
 	}
 </script>
 
@@ -94,13 +102,7 @@
 			<button onclick={copySource}
 				><Copy size={20} /><span>{copied ? '복사됨' : '공개 정보 복사'}</span></button
 			>
-			<a
-				href={wallet.network === 'mainnet'
-					? `https://mempool.space/address/${addresses[0]?.address}`
-					: `https://mempool.space/testnet/address/${addresses[0]?.address}`}
-				target="_blank"
-				rel="noreferrer"><ExternalLink size={20} /><span>탐색기</span></a
-			>
+			<button onclick={openExplorer}><ExternalLink size={20} /><span>탐색기</span></button>
 		</div>
 
 		<section class="section-block">

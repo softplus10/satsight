@@ -13,7 +13,10 @@
 		"test": "vitest run",
 		"cap:sync": "npm run build && cap sync",
 		"cap:android": "npm run cap:sync && cap open android",
-		"cap:ios": "npm run cap:sync && cap open ios"
+		"cap:ios": "npm run cap:sync && cap open ios",
+		"tauri": "tauri",
+		"tauri:dev": "tauri dev",
+		"tauri:build": "tauri build"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.0",
@@ -22,6 +25,7 @@
 		"@sveltejs/adapter-static": "^3.0.10",
 		"@sveltejs/kit": "^2.70.2",
 		"@sveltejs/vite-plugin-svelte": "^7.3.0",
+		"@tauri-apps/cli": "^2.11.4",
 		"@types/node": "^24.0.0",
 		"eslint": "^9.39.0",
 		"eslint-config-prettier": "^10.1.0",
@@ -46,6 +50,8 @@
 		"@scure/base": "^2.0.0",
 		"@scure/bip32": "^2.0.1",
 		"@scure/btc-signer": "^2.3.0",
+		"@tauri-apps/api": "^2.11.1",
+		"@tauri-apps/plugin-opener": "^2.5.4",
 		"idb": "^8.0.3",
 		"@lucide/svelte": "^1.31.0"
 	}

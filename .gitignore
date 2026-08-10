@@ -12,3 +12,4 @@ android/app/src/main/assets/public
 ios/App/Pods
 ios/App/App/public
 coverage
+src-tauri/target
