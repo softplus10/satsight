@@ -26,6 +26,17 @@ describe('bitcoin helpers', () => {
 		expect(validateAddress(first, 'testnet')).toBe(false);
 	});
 
+	it.each([
+		['legacy', /^1/],
+		['nested-segwit', /^3/],
+		['native-segwit', /^bc1q/],
+		['taproot', /^bc1p/]
+	] as const)('derives a valid %s address', (scriptType, prefix) => {
+		const address = deriveAddress(xpub, 'mainnet', scriptType, 0, 0);
+		expect(address).toMatch(prefix);
+		expect(validateAddress(address, 'mainnet')).toBe(true);
+	});
+
 	it('formats bitcoin values and long identifiers', () => {
 		expect(formatBtc(123_456_789)).toBe('1.23456789');
 		expect(shortAddress('bc1q1234567890abcdefghijkl')).toBe('bc1q1234…efghijkl');

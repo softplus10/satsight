@@ -55,7 +55,7 @@ export function deriveAddress(
 		case 'nested-segwit':
 			return p2sh(p2wpkh(publicKey, net), net).address;
 		case 'taproot':
-			return p2tr(publicKey, undefined, net).address;
+			return p2tr(publicKey.slice(1), undefined, net).address;
 		default:
 			return p2wpkh(publicKey, net).address;
 	}
