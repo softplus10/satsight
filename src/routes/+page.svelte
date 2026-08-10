@@ -11,8 +11,8 @@
 
 	async function refresh() {
 		syncing = true;
-		await walletState.initialize();
-		setTimeout(() => (syncing = false), 450);
+		await walletState.syncAll();
+		syncing = false;
 	}
 </script>
 
@@ -74,6 +74,11 @@
 			<div class="skeleton-list"><i></i><i></i></div>
 		{/if}
 	</section>
+	{#if walletState.wallets.some((wallet) => wallet.syncError)}
+		<p class="sync-warning">
+			일부 지갑을 동기화하지 못했습니다. 저장된 데이터는 그대로 유지됩니다.
+		</p>
+	{/if}
 
 	{#if walletState.transactions.length}
 		<section class="section-block">

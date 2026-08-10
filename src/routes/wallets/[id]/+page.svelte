@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { Copy, Ellipsis, ExternalLink, QrCode, Trash2 } from '@lucide/svelte';
+	import { Copy, Ellipsis, ExternalLink, QrCode, RotateCw, Trash2 } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -14,6 +14,7 @@
 	let addresses = $state<WatchedAddress[]>([]);
 	let copied = $state(false);
 	let menu = $state(false);
+	let syncMessage = $state('');
 	const transactions = $derived(
 		walletState.transactions.filter((item) => item.walletId === page.params.id)
 	);
@@ -36,18 +37,39 @@
 		await walletState.removeWallet(wallet.id);
 		await goto('/wallets');
 	}
+
+	async function sync() {
+		if (!wallet) return;
+		syncMessage = '';
+		try {
+			await walletState.syncWallet(wallet.id);
+			wallet = walletState.wallets.find((item) => item.id === page.params.id);
+			if (wallet) addresses = await walletState.addresses(wallet.id);
+			syncMessage = '최신 데이터로 동기화했습니다.';
+		} catch (cause) {
+			syncMessage = cause instanceof Error ? cause.message : '동기화하지 못했습니다.';
+		}
+	}
 </script>
 
 <svelte:head><title>{wallet?.name ?? '지갑'} · SatSight</title></svelte:head>
 <main class="page">
 	{#if wallet}
 		<PageHeader title={wallet.name} eyebrow={wallet.network.toUpperCase()} back="/wallets">
-			{#snippet action()}<div class="menu-wrap">
-					<button class="icon-button" onclick={() => (menu = !menu)} aria-label="메뉴"
-						><Ellipsis size={21} /></button
-					>{#if menu}<div class="context-menu">
-							<button onclick={remove}><Trash2 size={16} /> 지갑 삭제</button>
-						</div>{/if}
+			{#snippet action()}<div class="header-buttons">
+					<button
+						class="icon-button"
+						class:spinning={walletState.syncingIds.includes(page.params.id ?? '')}
+						onclick={sync}
+						aria-label="지갑 동기화"><RotateCw size={19} /></button
+					>
+					<div class="menu-wrap">
+						<button class="icon-button" onclick={() => (menu = !menu)} aria-label="메뉴"
+							><Ellipsis size={21} /></button
+						>{#if menu}<div class="context-menu">
+								<button onclick={remove}><Trash2 size={16} /> 지갑 삭제</button>
+							</div>{/if}
+					</div>
 				</div>{/snippet}
 		</PageHeader>
 		<section class="wallet-hero" style={`--wallet-color:${wallet.color}`}>
@@ -63,6 +85,9 @@
 				<div><span>거래</span><strong>{wallet.txCount}건</strong></div>
 			</div>
 		</section>
+		{#if syncMessage}<p class:failed={Boolean(wallet.syncError)} class="sync-message">
+				{syncMessage}
+			</p>{/if}
 
 		<div class="detail-actions">
 			<a href={`/wallets/${wallet.id}/addresses`}><QrCode size={20} /><span>주소 보기</span></a>

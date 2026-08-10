@@ -18,7 +18,9 @@
 	}
 
 	onMount(() => {
-		walletState.initialize();
+		walletState.initialize().then(() => {
+			if (walletState.settings.autoSync && navigator.onLine) walletState.syncAll();
+		});
 		online = navigator.onLine;
 		const update = () => (online = navigator.onLine);
 		window.addEventListener('online', update);

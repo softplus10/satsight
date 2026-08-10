@@ -29,6 +29,7 @@ export interface WatchedAddress {
 	label: string;
 	used: boolean;
 	balance: number;
+	confirmedBalance: number;
 	txCount: number;
 }
 
