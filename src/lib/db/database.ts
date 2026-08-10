@@ -1,6 +1,12 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import { browser } from '$app/environment';
-import { DEFAULT_SETTINGS, type AppSettings, type Wallet, type WalletTransaction, type WatchedAddress } from '$lib/domain/types';
+import {
+	DEFAULT_SETTINGS,
+	type AppSettings,
+	type Wallet,
+	type WalletTransaction,
+	type WatchedAddress
+} from '$lib/domain/types';
 
 interface SatSightSchema extends DBSchema {
 	wallets: { key: string; value: Wallet; indexes: { 'by-created': string } };
@@ -48,7 +54,10 @@ export async function deleteWallet(id: string): Promise<void> {
 	const store = await db();
 	const transaction = store.transaction(['wallets', 'addresses', 'transactions'], 'readwrite');
 	const addresses = await transaction.objectStore('addresses').index('by-wallet').getAllKeys(id);
-	const transactions = await transaction.objectStore('transactions').index('by-wallet').getAllKeys(id);
+	const transactions = await transaction
+		.objectStore('transactions')
+		.index('by-wallet')
+		.getAllKeys(id);
 	await Promise.all([
 		transaction.objectStore('wallets').delete(id),
 		...addresses.map((key) => transaction.objectStore('addresses').delete(key)),

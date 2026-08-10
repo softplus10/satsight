@@ -2,6 +2,8 @@
 	import { onMount, type Snippet } from 'svelte';
 	import { page } from '$app/state';
 	import { House, Landmark, ListTree, Settings, WifiOff } from '@lucide/svelte';
+	import { Capacitor } from '@capacitor/core';
+	import { StatusBar, Style } from '@capacitor/status-bar';
 	import { walletState } from '$lib/state/wallets.svelte';
 
 	let { children }: { children: Snippet } = $props();
@@ -18,6 +20,10 @@
 	}
 
 	onMount(() => {
+		if (Capacitor.isNativePlatform()) {
+			void StatusBar.setStyle({ style: Style.Light });
+			void StatusBar.setBackgroundColor({ color: '#0b0d10' });
+		}
 		walletState.initialize().then(() => {
 			if (walletState.settings.autoSync && navigator.onLine) walletState.syncAll();
 		});

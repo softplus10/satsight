@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { HDKey } from '@scure/bip32';
-import { deriveAddress, formatBtc, shortAddress, validateAddress, validateExtendedPublicKey } from './bitcoin';
+import {
+	deriveAddress,
+	formatBtc,
+	shortAddress,
+	validateAddress,
+	validateExtendedPublicKey
+} from './bitcoin';
 
 const root = HDKey.fromMasterSeed(new Uint8Array(32).fill(7));
 const xpub = root.publicExtendedKey;

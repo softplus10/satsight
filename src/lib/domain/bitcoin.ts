@@ -42,7 +42,8 @@ export function deriveAddress(
 	branch: 0 | 1,
 	index: number
 ): string {
-	if (!Number.isSafeInteger(index) || index < 0) throw new Error('주소 인덱스가 올바르지 않습니다.');
+	if (!Number.isSafeInteger(index) || index < 0)
+		throw new Error('주소 인덱스가 올바르지 않습니다.');
 	const root = HDKey.fromExtendedKey(cleanSource(xpub), bip32Versions(network));
 	const publicKey = root.deriveChild(branch).deriveChild(index).publicKey;
 	if (!publicKey) throw new Error('공개키를 파생할 수 없습니다.');
@@ -65,9 +66,12 @@ export function sourceError(
 	kind: 'address' | 'xpub',
 	network: BitcoinNetwork
 ): string | null {
-	if (!cleanSource(source)) return kind === 'address' ? '비트코인 주소를 입력하세요.' : '확장 공개키를 입력하세요.';
-	if (kind === 'address' && !validateAddress(source, network)) return '선택한 네트워크와 주소가 맞지 않습니다.';
-	if (kind === 'xpub' && !validateExtendedPublicKey(source, network)) return '유효한 xpub 또는 tpub 공개키가 아닙니다.';
+	if (!cleanSource(source))
+		return kind === 'address' ? '비트코인 주소를 입력하세요.' : '확장 공개키를 입력하세요.';
+	if (kind === 'address' && !validateAddress(source, network))
+		return '선택한 네트워크와 주소가 맞지 않습니다.';
+	if (kind === 'xpub' && !validateExtendedPublicKey(source, network))
+		return '유효한 xpub 또는 tpub 공개키가 아닙니다.';
 	return null;
 }
 
