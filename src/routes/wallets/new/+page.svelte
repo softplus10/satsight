@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { KeyRound, MapPin, ShieldCheck } from '@lucide/svelte';
+	import { KeyRound, MapPin, ScanLine, ShieldCheck } from '@lucide/svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
-	import { sourceError } from '$lib/domain/bitcoin';
+	import QrScanner from '$lib/components/QrScanner.svelte';
+	import { parseWalletQr, sourceError } from '$lib/domain/bitcoin';
 	import type { BitcoinNetwork, ScriptType, WalletKind } from '$lib/domain/types';
 	import { walletState } from '$lib/state/wallets.svelte';
 
@@ -13,6 +14,22 @@
 	let source = $state('');
 	let error = $state('');
 	let saving = $state(false);
+	let scannerOpen = $state(false);
+
+	function importQr(value: string) {
+		const parsed = parseWalletQr(value);
+		scannerOpen = false;
+		if (!parsed) {
+			error = '지원하는 비트코인 주소, xpub/tpub 또는 descriptor QR이 아닙니다.';
+			return;
+		}
+		kind = parsed.kind;
+		network = parsed.network;
+		scriptType = parsed.scriptType;
+		source = parsed.source;
+		if (!name) name = 'QR 지갑';
+		error = '';
+	}
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
@@ -34,7 +51,11 @@
 
 <svelte:head><title>지갑 추가 · SatSight</title></svelte:head>
 <main class="page narrow">
-	<PageHeader title="Watch Wallet 추가" eyebrow="NEW WALLET" back="/wallets" />
+	<PageHeader title="Watch Wallet 추가" eyebrow="NEW WALLET" back="/wallets">
+		{#snippet action()}<button class="button small secondary" onclick={() => (scannerOpen = true)}
+				><ScanLine size={17} /> QR 스캔</button
+			>{/snippet}
+	</PageHeader>
 	<form class="form-card" onsubmit={submit}>
 		<fieldset class="source-picker">
 			<legend>가져올 정보</legend>
@@ -129,3 +150,4 @@
 		>
 	</form>
 </main>
+{#if scannerOpen}<QrScanner onResult={importQr} onClose={() => (scannerOpen = false)} />{/if}

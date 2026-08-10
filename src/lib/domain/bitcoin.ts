@@ -2,6 +2,13 @@ import { HDKey, type Versions } from '@scure/bip32';
 import { Address, NETWORK, TEST_NETWORK, p2pkh, p2sh, p2tr, p2wpkh } from '@scure/btc-signer';
 import type { BitcoinNetwork, ScriptType } from './types';
 
+export interface ParsedWalletQr {
+	source: string;
+	kind: 'address' | 'xpub';
+	network: BitcoinNetwork;
+	scriptType: ScriptType;
+}
+
 const MAINNET_VERSIONS: Versions = { public: 0x0488b21e, private: 0x0488ade4 };
 const TESTNET_VERSIONS: Versions = { public: 0x043587cf, private: 0x04358394 };
 
@@ -97,4 +104,52 @@ export function walletDescriptor(source: string, type: ScriptType): string {
 	if (type === 'nested-segwit') return `sh(wpkh(${inner}))`;
 	if (type === 'taproot') return `tr(${inner})`;
 	return `wpkh(${inner})`;
+}
+
+export function parseWalletQr(raw: string): ParsedWalletQr | null {
+	let value = raw.trim();
+	if (!value) return null;
+
+	try {
+		const json = JSON.parse(value) as Record<string, unknown>;
+		const nested = json.address ?? json.xpub ?? json.tpub ?? json.descriptor;
+		if (typeof nested === 'string') value = nested.trim();
+	} catch {
+		// Plain-text QR values are the normal path.
+	}
+
+	if (value.toLowerCase().startsWith('bitcoin:')) {
+		value = decodeURIComponent(value.slice(8).split('?')[0]);
+	}
+
+	let scriptType: ScriptType = 'native-segwit';
+	const descriptor = value.match(
+		/^(sh\(wpkh|wpkh|pkh|tr)\((?:\[[^\]]+\])?([xt]pub[1-9A-HJ-NP-Za-km-z]+)(?:\/[^)]*)?\)\)?(?:#[a-z0-9]+)?$/i
+	);
+	if (descriptor) {
+		value = descriptor[2];
+		const wrapper = descriptor[1].toLowerCase();
+		scriptType =
+			wrapper === 'pkh'
+				? 'legacy'
+				: wrapper === 'tr'
+					? 'taproot'
+					: wrapper === 'sh(wpkh'
+						? 'nested-segwit'
+						: 'native-segwit';
+	}
+
+	if (value.startsWith('xpub') && validateExtendedPublicKey(value, 'mainnet')) {
+		return { source: value, kind: 'xpub', network: 'mainnet', scriptType };
+	}
+	if (value.startsWith('tpub') && validateExtendedPublicKey(value, 'testnet')) {
+		return { source: value, kind: 'xpub', network: 'testnet', scriptType };
+	}
+	if (validateAddress(value, 'mainnet')) {
+		return { source: value, kind: 'address', network: 'mainnet', scriptType };
+	}
+	if (validateAddress(value, 'testnet')) {
+		return { source: value, kind: 'address', network: 'testnet', scriptType };
+	}
+	return null;
 }

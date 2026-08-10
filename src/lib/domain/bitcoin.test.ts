@@ -3,6 +3,7 @@ import { HDKey } from '@scure/bip32';
 import {
 	deriveAddress,
 	formatBtc,
+	parseWalletQr,
 	shortAddress,
 	validateAddress,
 	validateExtendedPublicKey
@@ -40,5 +41,16 @@ describe('bitcoin helpers', () => {
 	it('formats bitcoin values and long identifiers', () => {
 		expect(formatBtc(123_456_789)).toBe('1.23456789');
 		expect(shortAddress('bc1q1234567890abcdefghijkl')).toBe('bc1q1234…efghijkl');
+	});
+
+	it('parses address, BIP21, xpub and descriptor QR values', () => {
+		const address = deriveAddress(xpub, 'mainnet', 'native-segwit', 0, 0);
+		expect(parseWalletQr(`bitcoin:${address}?amount=0.01`)?.source).toBe(address);
+		expect(parseWalletQr(xpub)).toMatchObject({ kind: 'xpub', network: 'mainnet' });
+		expect(parseWalletQr(`sh(wpkh(${xpub}/0/*))`)).toMatchObject({
+			kind: 'xpub',
+			scriptType: 'nested-segwit'
+		});
+		expect(parseWalletQr('not-bitcoin-data')).toBeNull();
 	});
 });
