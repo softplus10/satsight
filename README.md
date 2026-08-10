@@ -38,7 +38,7 @@ SvelteKit과 Capacitor로 만든 비트코인 전용 Watch Only Wallet입니다.
 
 ## 개발
 
-Node.js 24 이상을 권장합니다.
+Node.js 24 이상을 권장합니다. Android 네이티브 빌드에는 JDK 21 또는 24와 Android SDK가 필요합니다.
 
 ```sh
 npm install
