@@ -821,7 +821,7 @@ code {
 }
 .detail-actions {
 	display: grid;
-	grid-template-columns: repeat(3, 1fr);
+	grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
 	gap: 8px;
 	margin-top: 12px;
 }
@@ -1291,6 +1291,125 @@ code {
 	font-size: 9px;
 	line-height: 1.55;
 	text-align: center;
+}
+.animated-qr {
+	display: flex;
+	align-items: center;
+	flex-direction: column;
+	gap: 10px;
+	padding: 18px;
+	border: 1px solid var(--line);
+	border-radius: 20px;
+	background: #fff;
+}
+.animated-qr img,
+.qr-placeholder {
+	display: block;
+	width: min(100%, 440px);
+	aspect-ratio: 1;
+}
+.animated-qr img {
+	image-rendering: pixelated;
+}
+.qr-placeholder {
+	display: grid;
+	place-items: center;
+	background: #f4f4f4;
+	color: #555;
+	font-size: 11px;
+}
+.animated-qr p {
+	margin: 0;
+	color: #35383d;
+	font-size: 9px;
+	font-weight: 700;
+}
+.send-page {
+	padding-bottom: 40px;
+}
+.send-stage,
+.origin-connect {
+	display: grid;
+	gap: 14px;
+}
+.send-summary {
+	overflow: hidden;
+	border: 1px solid var(--line);
+	border-radius: 18px;
+	background: var(--surface);
+}
+.send-summary h2 {
+	margin: 0;
+	padding: 15px;
+	border-bottom: 1px solid var(--line);
+	font-size: 12px;
+}
+.send-summary > div {
+	display: flex;
+	min-height: 46px;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 10px 14px;
+	border-bottom: 1px solid var(--line);
+}
+.send-summary > div:last-child {
+	border-bottom: 0;
+}
+.send-summary span {
+	color: #777d87;
+	font-size: 9px;
+}
+.send-summary strong,
+.send-summary code {
+	font-size: 10px;
+}
+.send-summary code {
+	color: #b6bac1;
+}
+.send-buttons {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 8px;
+}
+.send-buttons .button {
+	width: 100%;
+}
+.send-instructions {
+	padding: 14px;
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	background: var(--surface);
+}
+.send-instructions strong {
+	font-size: 10px;
+}
+.send-instructions p {
+	margin: 5px 0 0;
+	color: #777d87;
+	font-size: 9px;
+	line-height: 1.6;
+}
+.broadcast-success {
+	display: flex;
+	align-items: center;
+	flex-direction: column;
+	gap: 10px;
+	padding: 30px 18px;
+	border: 1px solid #2c5a49;
+	border-radius: 20px;
+	background: radial-gradient(circle at 50% 0, #173027, #13161b 55%);
+	color: var(--green);
+	text-align: center;
+}
+.broadcast-success h2 {
+	margin: 0;
+	color: #d9dedb;
+	font-size: 15px;
+}
+.broadcast-success code {
+	color: #8b9691;
+	font-size: 9px;
 }
 .privacy-cards {
 	display: grid;

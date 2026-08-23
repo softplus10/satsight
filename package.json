@@ -27,6 +27,7 @@
 		"@sveltejs/vite-plugin-svelte": "^7.3.0",
 		"@tauri-apps/cli": "^2.11.4",
 		"@types/node": "^24.0.0",
+		"@types/qrcode": "^1.5.6",
 		"eslint": "^9.39.0",
 		"eslint-config-prettier": "^10.1.0",
 		"eslint-plugin-svelte": "^3.13.0",
@@ -57,6 +58,7 @@
 		"@tauri-apps/plugin-opener": "^2.5.4",
 		"@zxing/browser": "^0.2.1",
 		"buffer": "^6.0.3",
-		"idb": "^8.0.3"
+		"idb": "^8.0.3",
+		"qrcode": "^1.5.4"
 	}
 }
