@@ -1,6 +1,8 @@
 import { HDKey, type Versions } from '@scure/bip32';
+import { URDecoder } from '@ngraveio/bc-ur';
 import { Buffer } from 'buffer';
-import { DataItem, URRegistryDecoder, decodeToDataItem, extend } from '@keystonehq/bc-ur-registry';
+import { DataItem, decodeToDataItem } from '@keystonehq/bc-ur-registry/dist/lib/index.js';
+import { patchTags } from '@keystonehq/bc-ur-registry/dist/utils.js';
 
 export interface QrSegmentProgress {
 	received: number;
@@ -21,8 +23,8 @@ const MAINNET_VERSIONS: Versions = { public: 0x0488b21e, private: 0x0488ade4 };
 const TESTNET_VERSIONS: Versions = { public: 0x043587cf, private: 0x04358394 };
 const SINGLE_KEY_EXPRESSIONS = new Set(['403', '400,404', '404', '409']);
 
-// Taproot's script-expression tag is newer than the registry package's built-in list.
-extend.cbor.patchTags([409]);
+// Decode only the registry and script tags needed to inspect single-key account exports.
+patchTags([303, 304, 305, 400, 401, 403, 404, 406, 407, 409]);
 
 interface UrKeyExpression {
 	keyExpression: string;
@@ -129,7 +131,7 @@ function descriptorForUrKey(decoded: UrKeyExpression): string | undefined {
 	return undefined;
 }
 
-function decodeSeedSignerUr(decoder: URRegistryDecoder): string | undefined {
+function decodeSeedSignerUr(decoder: URDecoder): string | undefined {
 	const ur = decoder.resultUR();
 	const root = decodeToDataItem(ur.cbor);
 	if (ur.type === 'crypto-output') {
@@ -155,7 +157,7 @@ function decodeSeedSignerUr(decoder: URRegistryDecoder): string | undefined {
 /** Collects Specter pXofY and Blockchain Commons UR animated QR formats. */
 export class QrSegmentCollector {
 	private parts: Array<string | undefined> | undefined;
-	private urDecoder: URRegistryDecoder | undefined;
+	private urDecoder: URDecoder | undefined;
 
 	reset() {
 		this.parts = undefined;
@@ -195,7 +197,7 @@ export class QrSegmentCollector {
 
 	private addUr(value: string): QrSegmentResult {
 		if (this.parts) return { progress: this.progress() };
-		this.urDecoder ??= new URRegistryDecoder();
+		this.urDecoder ??= new URDecoder();
 		try {
 			this.urDecoder.receivePart(value);
 		} catch {
