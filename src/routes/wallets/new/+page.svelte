@@ -4,7 +4,7 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import QrScanner from '$lib/components/QrScanner.svelte';
 	import { parseWalletQr, sourceError } from '$lib/domain/bitcoin';
-	import type { BitcoinNetwork, ScriptType, WalletKind } from '$lib/domain/types';
+	import type { BitcoinNetwork, KeyOrigin, ScriptType, WalletKind } from '$lib/domain/types';
 	import { walletState } from '$lib/state/wallets.svelte';
 
 	let name = $state('');
@@ -12,6 +12,7 @@
 	let network = $state<BitcoinNetwork>('mainnet');
 	let scriptType = $state<ScriptType>('native-segwit');
 	let source = $state('');
+	let keyOrigin = $state<KeyOrigin>();
 	let error = $state('');
 	let saving = $state(false);
 	let scannerOpen = $state(false);
@@ -27,6 +28,7 @@
 		network = parsed.network;
 		scriptType = parsed.scriptType;
 		source = parsed.source;
+		keyOrigin = parsed.keyOrigin;
 		if (!name) name = 'QR 지갑';
 		error = '';
 	}
@@ -39,7 +41,14 @@
 		if (validationError) return (error = validationError);
 		saving = true;
 		try {
-			const wallet = await walletState.addWallet({ name, kind, network, scriptType, source });
+			const wallet = await walletState.addWallet({
+				name,
+				kind,
+				network,
+				scriptType,
+				source,
+				keyOrigin
+			});
 			await goto(`/wallets/${wallet.id}`);
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : '지갑을 저장하지 못했습니다.';
@@ -65,6 +74,7 @@
 				onclick={() => {
 					kind = 'xpub';
 					source = '';
+					keyOrigin = undefined;
 					error = '';
 				}}
 				><KeyRound size={21} /><span
@@ -77,6 +87,7 @@
 				onclick={() => {
 					kind = 'address';
 					source = '';
+					keyOrigin = undefined;
 					error = '';
 				}}
 				><MapPin size={21} /><span><strong>단일 주소</strong><small>주소 하나만 추적</small></span

@@ -1,18 +1,20 @@
 import { HDKey, type Versions } from '@scure/bip32';
 import { Address, NETWORK, TEST_NETWORK, p2pkh, p2sh, p2tr, p2wpkh } from '@scure/btc-signer';
-import type { BitcoinNetwork, ScriptType } from './types';
+import type { BitcoinNetwork, KeyOrigin, ScriptType } from './types';
 
 export interface ParsedWalletQr {
 	source: string;
 	kind: 'address' | 'xpub';
 	network: BitcoinNetwork;
 	scriptType: ScriptType;
+	keyOrigin?: KeyOrigin;
 }
 
 export interface ParsedExtendedPublicKey {
 	source: string;
 	network: BitcoinNetwork;
 	scriptType?: ScriptType;
+	origin?: KeyOrigin;
 }
 
 const MAINNET_VERSIONS: Versions = { public: 0x0488b21e, private: 0x0488ade4 };
@@ -74,27 +76,31 @@ export function parseExtendedPublicKey(
 	let value = cleanSource(key);
 	let originScriptType: ScriptType | undefined;
 	let originNetwork: BitcoinNetwork | undefined;
+	let keyOrigin: KeyOrigin | undefined;
 	const origin = value.match(KEY_ORIGIN);
 	if (origin) {
-		const path = origin[2]
-			.slice(1)
-			.split('/')
-			.filter(Boolean)
-			.map((component) => Number(component.replace(/['hH]$/, '')));
-		if (path.some((component) => !Number.isSafeInteger(component) || component >= 0x80000000)) {
+		const components = origin[2].slice(1).split('/').filter(Boolean);
+		const indexes = components.map((component) => Number(component.replace(/['hH]$/, '')));
+		if (indexes.some((component) => !Number.isSafeInteger(component) || component >= 0x80000000)) {
 			return null;
 		}
+		keyOrigin = {
+			fingerprint: Number.parseInt(origin[1], 16) >>> 0,
+			path: indexes.map((index, position) =>
+				/['hH]$/.test(components[position]) ? index + 0x80000000 : index
+			)
+		};
 		originScriptType =
-			path[0] === 44
+			indexes[0] === 44
 				? 'legacy'
-				: path[0] === 49
+				: indexes[0] === 49
 					? 'nested-segwit'
-					: path[0] === 84
+					: indexes[0] === 84
 						? 'native-segwit'
-						: path[0] === 86
+						: indexes[0] === 86
 							? 'taproot'
 							: undefined;
-		originNetwork = path[1] === 0 ? 'mainnet' : path[1] === 1 ? 'testnet' : undefined;
+		originNetwork = indexes[1] === 0 ? 'mainnet' : indexes[1] === 1 ? 'testnet' : undefined;
 		value = origin[3];
 	}
 	const format = EXTENDED_PUBLIC_KEY_VERSIONS[value.slice(0, 4)];
@@ -120,7 +126,8 @@ export function parseExtendedPublicKey(
 		return {
 			source: normalized,
 			network: format.network,
-			scriptType: originScriptType ?? format.scriptType
+			scriptType: originScriptType ?? format.scriptType,
+			...(keyOrigin ? { origin: keyOrigin } : {})
 		};
 	} catch {
 		return null;
@@ -223,10 +230,10 @@ export function parseWalletQr(raw: string): ParsedWalletQr | null {
 
 	let descriptorScriptType: ScriptType | undefined;
 	const descriptor = value.match(
-		/^(sh\(wpkh|wpkh|pkh|tr)\((?:\[[^\]]+\])?([A-Za-z]pub[1-9A-HJ-NP-Za-km-z]+)(?:\/[^)]*)?\)\)?(?:#[a-z0-9]+)?$/
+		/^(sh\(wpkh|wpkh|pkh|tr)\((\[[^\]]+\])?([A-Za-z]pub[1-9A-HJ-NP-Za-km-z]+)(?:\/[^)]*)?\)\)?(?:#[a-z0-9]+)?$/
 	);
 	if (descriptor) {
-		value = descriptor[2];
+		value = `${descriptor[2] ?? ''}${descriptor[3]}`;
 		const wrapper = descriptor[1];
 		descriptorScriptType =
 			wrapper === 'pkh'
@@ -244,7 +251,8 @@ export function parseWalletQr(raw: string): ParsedWalletQr | null {
 			source: extendedKey.source,
 			kind: 'xpub',
 			network: extendedKey.network,
-			scriptType: descriptorScriptType ?? extendedKey.scriptType ?? 'native-segwit'
+			scriptType: descriptorScriptType ?? extendedKey.scriptType ?? 'native-segwit',
+			...(extendedKey.origin ? { keyOrigin: extendedKey.origin } : {})
 		};
 	}
 	if (validateAddress(value, 'mainnet')) {

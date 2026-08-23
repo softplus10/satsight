@@ -48,12 +48,20 @@ describe('bitcoin helpers', () => {
 		expect(parseExtendedPublicKey(`[d34db33f/84'/0'/0']${xpub}`)).toEqual({
 			source: xpub,
 			network: 'mainnet',
-			scriptType: 'native-segwit'
+			scriptType: 'native-segwit',
+			origin: {
+				fingerprint: 0xd34db33f,
+				path: [0x80000054, 0x80000000, 0x80000000]
+			}
 		});
 		expect(parseExtendedPublicKey(`[d34db33f/49h/0h/0h]${ypub}`)).toEqual({
 			source: xpub,
 			network: 'mainnet',
-			scriptType: 'nested-segwit'
+			scriptType: 'nested-segwit',
+			origin: {
+				fingerprint: 0xd34db33f,
+				path: [0x80000031, 0x80000000, 0x80000000]
+			}
 		});
 		expect(parseExtendedPublicKey(`[d34db33f/84'/1'/0']${xpub}`)).toBeNull();
 		expect(parseExtendedPublicKey(`[nothex/84'/0'/0']${xpub}`)).toBeNull();
@@ -104,7 +112,13 @@ describe('bitcoin helpers', () => {
 		});
 		expect(parseWalletQr(`[d34db33f/84h/0h/0h]${zpub}`)).toMatchObject({
 			source: xpub,
-			scriptType: 'native-segwit'
+			scriptType: 'native-segwit',
+			keyOrigin: { fingerprint: 0xd34db33f }
+		});
+		expect(parseWalletQr(`wpkh([d34db33f/84h/0h/0h]${zpub}/0/*)`)).toMatchObject({
+			source: xpub,
+			scriptType: 'native-segwit',
+			keyOrigin: { fingerprint: 0xd34db33f }
 		});
 		expect(parseWalletQr('not-bitcoin-data')).toBeNull();
 	});

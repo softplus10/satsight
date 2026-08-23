@@ -3,6 +3,12 @@ export type WalletKind = 'address' | 'xpub';
 export type ScriptType = 'native-segwit' | 'nested-segwit' | 'taproot' | 'legacy';
 export type TransactionDirection = 'received' | 'sent' | 'self';
 
+export interface KeyOrigin {
+	fingerprint: number;
+	/** Full account derivation path with hardened components using the BIP32 high bit. */
+	path: number[];
+}
+
 export interface Wallet {
 	id: string;
 	name: string;
@@ -10,6 +16,7 @@ export interface Wallet {
 	network: BitcoinNetwork;
 	scriptType: ScriptType;
 	source: string;
+	keyOrigin?: KeyOrigin;
 	color: string;
 	balance: number;
 	confirmedBalance: number;
@@ -64,6 +71,7 @@ export interface WalletDraft {
 	network: BitcoinNetwork;
 	scriptType: ScriptType;
 	source: string;
+	keyOrigin?: KeyOrigin;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {

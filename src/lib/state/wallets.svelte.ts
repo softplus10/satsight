@@ -39,6 +39,7 @@ class WalletState {
 			...draft,
 			id: crypto.randomUUID(),
 			source: extendedKey?.source ?? draft.source.trim().replaceAll(/\s/g, ''),
+			keyOrigin: extendedKey?.origin ?? draft.keyOrigin,
 			scriptType: extendedKey?.scriptType ?? draft.scriptType,
 			name: draft.name.trim(),
 			color: COLORS[this.wallets.length % COLORS.length],

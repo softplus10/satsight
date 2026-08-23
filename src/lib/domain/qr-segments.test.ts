@@ -101,7 +101,11 @@ describe('QR segment collector', () => {
 			source: account.publicExtendedKey,
 			kind: 'xpub',
 			network: 'mainnet',
-			scriptType: 'native-segwit'
+			scriptType: 'native-segwit',
+			keyOrigin: {
+				fingerprint: 3800464310,
+				path: [0x80000054, 0x80000000, 0x80000000]
+			}
 		});
 	});
 
