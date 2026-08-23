@@ -1209,6 +1209,50 @@ code {
 	box-shadow: 0 0 12px var(--orange);
 	animation: scan 2.3s ease-in-out infinite;
 }
+.segment-progress {
+	position: absolute;
+	right: 16px;
+	bottom: 16px;
+	left: 16px;
+	padding: 12px 14px;
+	border: 1px solid #f5a62355;
+	border-radius: 14px;
+	background: #0b0d10e8;
+	box-shadow: 0 8px 28px #0008;
+}
+.segment-progress > div:first-child {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 9px;
+}
+.segment-progress strong,
+.segment-progress b {
+	font-size: 10px;
+}
+.segment-progress b {
+	color: var(--orange);
+}
+.segment-progress-track {
+	height: 5px;
+	overflow: hidden;
+	border-radius: 999px;
+	background: #32363d;
+}
+.segment-progress-track span {
+	display: block;
+	height: 100%;
+	border-radius: inherit;
+	background: var(--orange);
+	transition: width 180ms ease;
+}
+.segment-progress small {
+	display: block;
+	margin-top: 7px;
+	color: #9298a2;
+	font-size: 8px;
+	text-align: right;
+}
 @keyframes scan {
 	50% {
 		transform: translateY(calc(min(62vw, 250px) - 18px));

@@ -2,13 +2,16 @@
 	import { onMount } from 'svelte';
 	import { BrowserQRCodeReader, type IScannerControls } from '@zxing/browser';
 	import { Camera, RotateCw, X } from '@lucide/svelte';
+	import { QrSegmentCollector, type QrSegmentProgress } from '$lib/domain/qr-segments';
 
 	let { onResult, onClose }: { onResult: (value: string) => void; onClose: () => void } = $props();
 	let video: HTMLVideoElement;
 	let controls: IScannerControls | undefined;
 	let starting = $state(true);
 	let error = $state('');
+	let segmentProgress = $state<QrSegmentProgress>();
 	let disposed = false;
+	const segments = new QrSegmentCollector();
 
 	function permissionError(cause: unknown) {
 		if (cause instanceof DOMException && cause.name === 'NotAllowedError') {
@@ -46,8 +49,11 @@
 				video,
 				(result) => {
 					if (!result || disposed) return;
+					const scanned = segments.add(result.getText());
+					segmentProgress = scanned.progress;
+					if (scanned.value === undefined) return;
 					scanner.stop();
-					onResult(result.getText());
+					onResult(scanned.value);
 				}
 			);
 			if (disposed) scanner.stop();
@@ -81,6 +87,24 @@
 		<div class="camera-preview">
 			<video bind:this={video} muted playsinline></video>
 			<div class="scan-frame"><i></i><i></i><i></i><i></i><span></span></div>
+			{#if segmentProgress}
+				<div class="segment-progress" role="status" aria-live="polite">
+					<div>
+						<strong>분할 QR 수집 중</strong><b>{segmentProgress.percent}%</b>
+					</div>
+					<div
+						class="segment-progress-track"
+						role="progressbar"
+						aria-label="분할 QR 수집 진행률"
+						aria-valuemin="0"
+						aria-valuemax="100"
+						aria-valuenow={segmentProgress.percent}
+					>
+						<span style:width={`${segmentProgress.percent}%`}></span>
+					</div>
+					<small>{segmentProgress.received} / {segmentProgress.total} 세그먼트</small>
+				</div>
+			{/if}
 			{#if starting}
 				<div class="camera-state">
 					<RotateCw class="spinning" size={27} /><strong>카메라 권한 요청 중…</strong>
@@ -95,7 +119,8 @@
 			{/if}
 		</div>
 		<p class="scanner-help">
-			비트코인 주소, BIP21 QR, xpub/tpub 또는 output descriptor를 프레임 안에 맞춰 주세요.
+			비트코인 주소, 확장 공개키 또는 output descriptor를 프레임 안에 맞춰 주세요. 분할 QR은 완료될
+			때까지 카메라를 유지해 주세요.
 		</p>
 	</div>
 </div>
