@@ -138,6 +138,7 @@
 					: '비트코인 주소'}</span
 			><textarea
 				bind:value={source}
+				oninput={() => (keyOrigin = undefined)}
 				rows="4"
 				spellcheck="false"
 				autocapitalize="off"

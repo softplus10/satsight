@@ -10,9 +10,10 @@ SvelteKit과 Capacitor로 만든 비트코인 전용 Watch Only Wallet입니다.
 - 카메라 권한 기반 QR 가져오기(BIP21, 주소, `[origin]xpub`, descriptor, Specter 분할 QR, SeedSigner animated UR)
 - Legacy, Nested SegWit, Native SegWit, Taproot 주소 파생
 - Esplora 호환 API를 통한 수동/선택적 자동 동기화
+- SeedSigner animated QR을 이용한 PSBT 생성·외부 서명·검증·브로드캐스트
 - PWA 서비스 워커 앱 셸 캐시
 - Capacitor 8 Android/iOS 프로젝트와 Tauri 2 데스크톱 프로젝트
-- 비밀키 입력, 서명, 전송 기능이 의도적으로 없는 Watch Only 경계
+- 비밀키 입력이나 기기 내 서명 기능이 없는 외부 서명 방식
 
 ## Route
 
@@ -23,6 +24,7 @@ SvelteKit과 Capacitor로 만든 비트코인 전용 Watch Only Wallet입니다.
 | `/wallets/new`            | 주소 또는 확장 공개키 가져오기                  |
 | `/wallets/[id]`           | 지갑 잔액, 공개 정보, 동기화, 최근 거래         |
 | `/wallets/[id]/addresses` | 외부/거스름 주소 목록                           |
+| `/wallets/[id]/send`      | PSBT 생성, SeedSigner 서명, 브로드캐스트        |
 | `/transactions`           | 전체 거래와 방향 필터                           |
 | `/transactions/[id]`      | 거래 상세 및 탐색기 링크                        |
 | `/settings`               | 표시 단위, Esplora 서버, 자동 동기화, gap limit |
@@ -91,6 +93,7 @@ Tauri 프로젝트는 `src-tauri/`에 있으며 Windows, macOS, Linux 번들 설
 ## 보안 경계
 
 - `xprv`, WIF 개인키, 시드 문구를 지원하지 않습니다.
-- 트랜잭션 생성·서명·브로드캐스트 기능이 없습니다.
+- 트랜잭션은 PSBT로 생성되며 개인키 서명은 SeedSigner 같은 외부 장치에서만 수행합니다.
+- signed PSBT의 unsigned transaction이 원본과 같은지 확인한 후에만 브로드캐스트합니다.
 - 지갑 데이터는 별도 클라우드 계정 없이 현재 기기의 IndexedDB에만 저장됩니다.
 - 이 앱은 잔액을 관찰하는 도구이며 백업 수단이 아닙니다. 원본 지갑의 시드 백업은 별도로 안전하게 보관해야 합니다.

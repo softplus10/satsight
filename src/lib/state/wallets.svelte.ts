@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { buildAddressPool } from '$lib/domain/address-pool';
-import { parseExtendedPublicKey } from '$lib/domain/bitcoin';
+import { parseExtendedPublicKey, parseWalletQr } from '$lib/domain/bitcoin';
 import type { AppSettings, Wallet, WalletDraft, WalletTransaction } from '$lib/domain/types';
 import { DEFAULT_SETTINGS } from '$lib/domain/types';
 import * as repository from '$lib/db/database';
@@ -78,13 +78,19 @@ class WalletState {
 	async connectKeyOrigin(id: string, exportedKey: string) {
 		const wallet = this.wallets.find((item) => item.id === id);
 		if (!wallet || wallet.kind !== 'xpub') throw new Error('확장 공개키 지갑을 찾을 수 없습니다.');
-		const parsed = parseExtendedPublicKey(exportedKey, wallet.network);
-		if (!parsed?.origin) throw new Error('[fingerprint/path]가 포함된 공개키를 가져와 주세요.');
+		const scanned = parseWalletQr(exportedKey);
+		const parsed = scanned?.kind === 'xpub' ? scanned : undefined;
+		if (!parsed?.keyOrigin) throw new Error('[fingerprint/path]가 포함된 공개키를 가져와 주세요.');
+		if (parsed.network !== wallet.network) throw new Error('현재 지갑과 네트워크가 다릅니다.');
 		if (parsed.source !== wallet.source) throw new Error('현재 지갑과 다른 확장 공개키입니다.');
-		if (parsed.scriptType && parsed.scriptType !== wallet.scriptType) {
+		if (parsed.scriptType !== wallet.scriptType) {
 			throw new Error('현재 지갑과 주소 형식이 다른 공개키입니다.');
 		}
-		const updated = { ...wallet, keyOrigin: parsed.origin, updatedAt: new Date().toISOString() };
+		const updated = {
+			...wallet,
+			keyOrigin: parsed.keyOrigin,
+			updatedAt: new Date().toISOString()
+		};
 		await repository.putWallet(updated);
 		this.wallets = this.wallets.map((item) => (item.id === id ? updated : item));
 		return updated;

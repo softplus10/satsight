@@ -20,8 +20,8 @@
 		<div class="info-strip">
 			<span>i</span>
 			<p>
-				SatSight는 공개 정보만 저장합니다. 이 앱에서는 비트코인을 전송하거나 개인키에 접근할 수
-				없습니다.
+				SatSight는 공개 정보만 저장합니다. PSBT는 SeedSigner 같은 외부 서명 장치에서 승인하며, 이
+				앱은 개인키에 접근하지 않습니다.
 			</p>
 		</div>
 	{:else if walletState.ready}

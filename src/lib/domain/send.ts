@@ -192,6 +192,11 @@ export function finalizeSignedPsbt(
 	if (hex.encode(original.unsignedTx) !== hex.encode(signed.unsignedTx)) {
 		throw new Error('서명된 PSBT의 받는 주소, 금액 또는 입력이 원본과 다릅니다.');
 	}
-	signed.finalize();
-	return { hex: signed.hex, txid: signed.id, fee: Number(signed.fee) };
+	try {
+		original.combine(signed);
+		original.finalize();
+	} catch {
+		throw new Error('signed PSBT의 서명이 부족하거나 원본 PSBT 정보와 충돌합니다.');
+	}
+	return { hex: original.hex, txid: original.id, fee: Number(original.fee) };
 }

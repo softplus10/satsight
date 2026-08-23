@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { Copy, Ellipsis, ExternalLink, QrCode, RotateCw, Trash2 } from '@lucide/svelte';
+	import { Copy, Ellipsis, ExternalLink, QrCode, RotateCw, Send, Trash2 } from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -98,6 +98,9 @@
 			</p>{/if}
 
 		<div class="detail-actions">
+			{#if wallet.kind === 'xpub'}<a href={`/wallets/${wallet.id}/send`}
+					><Send size={20} /><span>보내기</span></a
+				>{/if}
 			<a href={`/wallets/${wallet.id}/addresses`}><QrCode size={20} /><span>주소 보기</span></a>
 			<button onclick={copySource}
 				><Copy size={20} /><span>{copied ? '복사됨' : '공개 정보 복사'}</span></button
