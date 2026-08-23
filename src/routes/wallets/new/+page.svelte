@@ -20,7 +20,7 @@
 		const parsed = parseWalletQr(value);
 		scannerOpen = false;
 		if (!parsed) {
-			error = '지원하는 비트코인 주소, xpub/tpub 또는 descriptor QR이 아닙니다.';
+			error = '지원하는 비트코인 주소, 확장 공개키 또는 descriptor QR이 아닙니다.';
 			return;
 		}
 		kind = parsed.kind;
@@ -119,14 +119,19 @@
 		{/if}
 
 		<label class="field"
-			><span>{kind === 'xpub' ? (network === 'mainnet' ? 'xpub' : 'tpub') : '비트코인 주소'}</span
+			><span
+				>{kind === 'xpub'
+					? network === 'mainnet'
+						? 'xpub / ypub / zpub'
+						: 'tpub / upub / vpub'
+					: '비트코인 주소'}</span
 			><textarea
 				bind:value={source}
 				rows="4"
 				spellcheck="false"
 				autocapitalize="off"
 				placeholder={kind === 'xpub'
-					? `${network === 'mainnet' ? 'xpub' : 'tpub'}...`
+					? `${network === 'mainnet' ? 'xpub / ypub / zpub' : 'tpub / upub / vpub'}...`
 					: network === 'mainnet'
 						? 'bc1q...'
 						: 'tb1q...'}

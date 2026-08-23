@@ -9,8 +9,41 @@ export interface ParsedWalletQr {
 	scriptType: ScriptType;
 }
 
+export interface ParsedExtendedPublicKey {
+	source: string;
+	network: BitcoinNetwork;
+	scriptType?: ScriptType;
+}
+
 const MAINNET_VERSIONS: Versions = { public: 0x0488b21e, private: 0x0488ade4 };
 const TESTNET_VERSIONS: Versions = { public: 0x043587cf, private: 0x04358394 };
+const EXTENDED_PUBLIC_KEY_VERSIONS: Record<
+	string,
+	{ versions: Versions; network: BitcoinNetwork; scriptType?: ScriptType }
+> = {
+	xpub: { versions: MAINNET_VERSIONS, network: 'mainnet' },
+	ypub: {
+		versions: { public: 0x049d7cb2, private: MAINNET_VERSIONS.private },
+		network: 'mainnet',
+		scriptType: 'nested-segwit'
+	},
+	zpub: {
+		versions: { public: 0x04b24746, private: MAINNET_VERSIONS.private },
+		network: 'mainnet',
+		scriptType: 'native-segwit'
+	},
+	tpub: { versions: TESTNET_VERSIONS, network: 'testnet' },
+	upub: {
+		versions: { public: 0x044a5262, private: TESTNET_VERSIONS.private },
+		network: 'testnet',
+		scriptType: 'nested-segwit'
+	},
+	vpub: {
+		versions: { public: 0x045f1cf6, private: TESTNET_VERSIONS.private },
+		network: 'testnet',
+		scriptType: 'native-segwit'
+	}
+};
 
 function btcNetwork(network: BitcoinNetwork) {
 	return network === 'mainnet' ? NETWORK : TEST_NETWORK;
@@ -33,13 +66,32 @@ export function validateAddress(address: string, network: BitcoinNetwork): boole
 	}
 }
 
-export function validateExtendedPublicKey(key: string, network: BitcoinNetwork): boolean {
+export function parseExtendedPublicKey(
+	key: string,
+	network?: BitcoinNetwork
+): ParsedExtendedPublicKey | null {
+	const value = cleanSource(key);
+	const format = EXTENDED_PUBLIC_KEY_VERSIONS[value.slice(0, 4)];
+	if (!format || (network && format.network !== network)) return null;
 	try {
-		const node = HDKey.fromExtendedKey(cleanSource(key), bip32Versions(network));
-		return node.privateKey === null && node.publicKey !== null;
+		const node = HDKey.fromExtendedKey(value, format.versions);
+		if (node.privateKey !== null || !node.publicKey || !node.chainCode) return null;
+		const normalized = new HDKey({
+			versions: bip32Versions(format.network),
+			depth: node.depth,
+			index: node.index,
+			parentFingerprint: node.parentFingerprint,
+			chainCode: node.chainCode,
+			publicKey: node.publicKey
+		}).publicExtendedKey;
+		return { source: normalized, network: format.network, scriptType: format.scriptType };
 	} catch {
-		return false;
+		return null;
 	}
+}
+
+export function validateExtendedPublicKey(key: string, network: BitcoinNetwork): boolean {
+	return parseExtendedPublicKey(key, network) !== null;
 }
 
 export function deriveAddress(
@@ -51,7 +103,9 @@ export function deriveAddress(
 ): string {
 	if (!Number.isSafeInteger(index) || index < 0)
 		throw new Error('주소 인덱스가 올바르지 않습니다.');
-	const root = HDKey.fromExtendedKey(cleanSource(xpub), bip32Versions(network));
+	const parsed = parseExtendedPublicKey(xpub, network);
+	if (!parsed) throw new Error('확장 공개키가 올바르지 않습니다.');
+	const root = HDKey.fromExtendedKey(parsed.source, bip32Versions(network));
 	const publicKey = root.deriveChild(branch).deriveChild(index).publicKey;
 	if (!publicKey) throw new Error('공개키를 파생할 수 없습니다.');
 	const net = btcNetwork(network);
@@ -78,7 +132,7 @@ export function sourceError(
 	if (kind === 'address' && !validateAddress(source, network))
 		return '선택한 네트워크와 주소가 맞지 않습니다.';
 	if (kind === 'xpub' && !validateExtendedPublicKey(source, network))
-		return '유효한 xpub 또는 tpub 공개키가 아닙니다.';
+		return '유효한 xpub/ypub/zpub 또는 tpub/upub/vpub 공개키가 아닙니다.';
 	return null;
 }
 
@@ -112,7 +166,15 @@ export function parseWalletQr(raw: string): ParsedWalletQr | null {
 
 	try {
 		const json = JSON.parse(value) as Record<string, unknown>;
-		const nested = json.address ?? json.xpub ?? json.tpub ?? json.descriptor;
+		const nested =
+			json.address ??
+			json.xpub ??
+			json.ypub ??
+			json.zpub ??
+			json.tpub ??
+			json.upub ??
+			json.vpub ??
+			json.descriptor;
 		if (typeof nested === 'string') value = nested.trim();
 	} catch {
 		// Plain-text QR values are the normal path.
@@ -122,14 +184,14 @@ export function parseWalletQr(raw: string): ParsedWalletQr | null {
 		value = decodeURIComponent(value.slice(8).split('?')[0]);
 	}
 
-	let scriptType: ScriptType = 'native-segwit';
+	let descriptorScriptType: ScriptType | undefined;
 	const descriptor = value.match(
-		/^(sh\(wpkh|wpkh|pkh|tr)\((?:\[[^\]]+\])?([xt]pub[1-9A-HJ-NP-Za-km-z]+)(?:\/[^)]*)?\)\)?(?:#[a-z0-9]+)?$/i
+		/^(sh\(wpkh|wpkh|pkh|tr)\((?:\[[^\]]+\])?([A-Za-z]pub[1-9A-HJ-NP-Za-km-z]+)(?:\/[^)]*)?\)\)?(?:#[a-z0-9]+)?$/
 	);
 	if (descriptor) {
 		value = descriptor[2];
-		const wrapper = descriptor[1].toLowerCase();
-		scriptType =
+		const wrapper = descriptor[1];
+		descriptorScriptType =
 			wrapper === 'pkh'
 				? 'legacy'
 				: wrapper === 'tr'
@@ -139,17 +201,30 @@ export function parseWalletQr(raw: string): ParsedWalletQr | null {
 						: 'native-segwit';
 	}
 
-	if (value.startsWith('xpub') && validateExtendedPublicKey(value, 'mainnet')) {
-		return { source: value, kind: 'xpub', network: 'mainnet', scriptType };
-	}
-	if (value.startsWith('tpub') && validateExtendedPublicKey(value, 'testnet')) {
-		return { source: value, kind: 'xpub', network: 'testnet', scriptType };
+	const extendedKey = parseExtendedPublicKey(value);
+	if (extendedKey) {
+		return {
+			source: extendedKey.source,
+			kind: 'xpub',
+			network: extendedKey.network,
+			scriptType: descriptorScriptType ?? extendedKey.scriptType ?? 'native-segwit'
+		};
 	}
 	if (validateAddress(value, 'mainnet')) {
-		return { source: value, kind: 'address', network: 'mainnet', scriptType };
+		return {
+			source: value,
+			kind: 'address',
+			network: 'mainnet',
+			scriptType: descriptorScriptType ?? 'native-segwit'
+		};
 	}
 	if (validateAddress(value, 'testnet')) {
-		return { source: value, kind: 'address', network: 'testnet', scriptType };
+		return {
+			source: value,
+			kind: 'address',
+			network: 'testnet',
+			scriptType: descriptorScriptType ?? 'native-segwit'
+		};
 	}
 	return null;
 }

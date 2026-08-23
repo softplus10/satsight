@@ -3,19 +3,45 @@ import { HDKey } from '@scure/bip32';
 import {
 	deriveAddress,
 	formatBtc,
+	parseExtendedPublicKey,
 	parseWalletQr,
 	shortAddress,
 	validateAddress,
 	validateExtendedPublicKey
 } from './bitcoin';
 
-const root = HDKey.fromMasterSeed(new Uint8Array(32).fill(7));
+const seed = new Uint8Array(32).fill(7);
+const root = HDKey.fromMasterSeed(seed);
 const xpub = root.publicExtendedKey;
+const ypub = HDKey.fromMasterSeed(seed, {
+	public: 0x049d7cb2,
+	private: 0x0488ade4
+}).publicExtendedKey;
+const zpub = HDKey.fromMasterSeed(seed, {
+	public: 0x04b24746,
+	private: 0x0488ade4
+}).publicExtendedKey;
 
 describe('bitcoin helpers', () => {
 	it('validates an extended public key without accepting random text', () => {
 		expect(validateExtendedPublicKey(xpub, 'mainnet')).toBe(true);
+		expect(validateExtendedPublicKey(ypub, 'mainnet')).toBe(true);
+		expect(validateExtendedPublicKey(zpub, 'mainnet')).toBe(true);
+		expect(validateExtendedPublicKey(zpub, 'testnet')).toBe(false);
 		expect(validateExtendedPublicKey('not-an-xpub', 'mainnet')).toBe(false);
+	});
+
+	it('normalizes SLIP-132 public keys and retains their script type', () => {
+		expect(parseExtendedPublicKey(ypub)).toEqual({
+			source: xpub,
+			network: 'mainnet',
+			scriptType: 'nested-segwit'
+		});
+		expect(parseExtendedPublicKey(zpub)).toEqual({
+			source: xpub,
+			network: 'mainnet',
+			scriptType: 'native-segwit'
+		});
 	});
 
 	it('derives deterministic, network-aware addresses', () => {
@@ -50,6 +76,16 @@ describe('bitcoin helpers', () => {
 		expect(parseWalletQr(`sh(wpkh(${xpub}/0/*))`)).toMatchObject({
 			kind: 'xpub',
 			scriptType: 'nested-segwit'
+		});
+		expect(parseWalletQr(ypub)).toMatchObject({
+			source: xpub,
+			kind: 'xpub',
+			network: 'mainnet',
+			scriptType: 'nested-segwit'
+		});
+		expect(parseWalletQr(`wpkh(${zpub}/0/*)`)).toMatchObject({
+			source: xpub,
+			scriptType: 'native-segwit'
 		});
 		expect(parseWalletQr('not-bitcoin-data')).toBeNull();
 	});

@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { deriveAddress } from '$lib/domain/bitcoin';
+import { deriveAddress, parseExtendedPublicKey } from '$lib/domain/bitcoin';
 import type {
 	AppSettings,
 	Wallet,
@@ -38,10 +38,13 @@ class WalletState {
 
 	async addWallet(draft: WalletDraft): Promise<Wallet> {
 		const now = new Date().toISOString();
+		const extendedKey =
+			draft.kind === 'xpub' ? parseExtendedPublicKey(draft.source, draft.network) : null;
 		const wallet: Wallet = {
 			...draft,
 			id: crypto.randomUUID(),
-			source: draft.source.trim().replaceAll(/\s/g, ''),
+			source: extendedKey?.source ?? draft.source.trim().replaceAll(/\s/g, ''),
+			scriptType: extendedKey?.scriptType ?? draft.scriptType,
 			name: draft.name.trim(),
 			color: COLORS[this.wallets.length % COLORS.length],
 			balance: 0,
