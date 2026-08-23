@@ -1,4 +1,5 @@
 import { deriveAddress } from '$lib/domain/bitcoin';
+import { normalizeGapLimit } from '$lib/domain/address-pool';
 import type { AppSettings, Wallet, WalletTransaction, WatchedAddress } from '$lib/domain/types';
 
 interface AddressStats {
@@ -168,7 +169,7 @@ export async function syncWatchWallet(
 	const base = apiBase(settings, wallet);
 	if (!/^https?:\/\//.test(base)) throw new Error('Esplora API 주소를 확인하세요.');
 	const known = new Map(knownAddresses.map((item) => [`${item.branch}:${item.index}`, item]));
-	const gapLimit = Math.min(50, Math.max(5, settings.gapLimit));
+	const gapLimit = normalizeGapLimit(settings.gapLimit);
 	const addresses =
 		wallet.kind === 'address'
 			? [await scanAddress(base, wallet, 0, 0, knownAddresses[0])]

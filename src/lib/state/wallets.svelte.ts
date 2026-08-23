@@ -1,12 +1,7 @@
 import { browser } from '$app/environment';
-import { deriveAddress, parseExtendedPublicKey } from '$lib/domain/bitcoin';
-import type {
-	AppSettings,
-	Wallet,
-	WalletDraft,
-	WalletTransaction,
-	WatchedAddress
-} from '$lib/domain/types';
+import { buildAddressPool } from '$lib/domain/address-pool';
+import { parseExtendedPublicKey } from '$lib/domain/bitcoin';
+import type { AppSettings, Wallet, WalletDraft, WalletTransaction } from '$lib/domain/types';
 import { DEFAULT_SETTINGS } from '$lib/domain/types';
 import * as repository from '$lib/db/database';
 import { syncWatchWallet } from '$lib/sync/esplora';
@@ -54,33 +49,7 @@ class WalletState {
 			updatedAt: now
 		};
 		await repository.putWallet(wallet);
-		const address: WatchedAddress =
-			wallet.kind === 'address'
-				? {
-						id: `${wallet.id}:0:0`,
-						walletId: wallet.id,
-						address: wallet.source,
-						branch: 0,
-						index: 0,
-						label: '입금 주소',
-						used: false,
-						balance: 0,
-						confirmedBalance: 0,
-						txCount: 0
-					}
-				: {
-						id: `${wallet.id}:0:0`,
-						walletId: wallet.id,
-						address: deriveAddress(wallet.source, wallet.network, wallet.scriptType, 0, 0),
-						branch: 0,
-						index: 0,
-						label: '주소 #1',
-						used: false,
-						balance: 0,
-						confirmedBalance: 0,
-						txCount: 0
-					};
-		await repository.putAddresses([address]);
+		await repository.putAddresses(buildAddressPool(wallet, this.settings.gapLimit));
 		this.wallets = [wallet, ...this.wallets];
 		return wallet;
 	}
@@ -92,7 +61,12 @@ class WalletState {
 	}
 
 	async addresses(walletId: string) {
-		return repository.listAddresses(walletId);
+		const wallet = this.wallets.find((item) => item.id === walletId);
+		const known = await repository.listAddresses(walletId);
+		if (!wallet) return known;
+		const addresses = buildAddressPool(wallet, this.settings.gapLimit, known);
+		if (addresses.length > known.length) await repository.putAddresses(addresses);
+		return addresses;
 	}
 
 	async saveSettings(settings: AppSettings) {

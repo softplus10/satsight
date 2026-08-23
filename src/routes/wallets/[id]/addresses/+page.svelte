@@ -49,7 +49,7 @@
 			</div>
 		{/each}
 		{#if !addresses.some((item) => item.branch === branch)}
-			<p class="footnote">아직 파생된 주소가 없습니다. 온라인에서 지갑을 동기화해 주세요.</p>
+			<p class="footnote">이 지갑에서는 해당 주소 체인을 사용할 수 없습니다.</p>
 		{/if}
 	</div>
 	<p class="footnote">
