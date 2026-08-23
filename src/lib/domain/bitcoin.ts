@@ -48,7 +48,7 @@ const EXTENDED_PUBLIC_KEY_VERSIONS: Record<
 	}
 };
 
-function btcNetwork(network: BitcoinNetwork) {
+export function bitcoinNetwork(network: BitcoinNetwork) {
 	return network === 'mainnet' ? NETWORK : TEST_NETWORK;
 }
 
@@ -62,7 +62,7 @@ export function cleanSource(source: string): string {
 
 export function validateAddress(address: string, network: BitcoinNetwork): boolean {
 	try {
-		Address(btcNetwork(network)).decode(cleanSource(address));
+		Address(bitcoinNetwork(network)).decode(cleanSource(address));
 		return true;
 	} catch {
 		return false;
@@ -149,10 +149,9 @@ export function deriveAddress(
 		throw new Error('주소 인덱스가 올바르지 않습니다.');
 	const parsed = parseExtendedPublicKey(xpub, network);
 	if (!parsed) throw new Error('확장 공개키가 올바르지 않습니다.');
-	const root = HDKey.fromExtendedKey(parsed.source, bip32Versions(network));
-	const publicKey = root.deriveChild(branch).deriveChild(index).publicKey;
+	const publicKey = derivePublicKey(parsed.source, network, branch, index);
 	if (!publicKey) throw new Error('공개키를 파생할 수 없습니다.');
-	const net = btcNetwork(network);
+	const net = bitcoinNetwork(network);
 
 	switch (scriptType) {
 		case 'legacy':
@@ -164,6 +163,22 @@ export function deriveAddress(
 		default:
 			return p2wpkh(publicKey, net).address;
 	}
+}
+
+export function derivePublicKey(
+	xpub: string,
+	network: BitcoinNetwork,
+	branch: 0 | 1,
+	index: number
+): Uint8Array {
+	if (!Number.isSafeInteger(index) || index < 0)
+		throw new Error('주소 인덱스가 올바르지 않습니다.');
+	const parsed = parseExtendedPublicKey(xpub, network);
+	if (!parsed) throw new Error('확장 공개키가 올바르지 않습니다.');
+	const root = HDKey.fromExtendedKey(parsed.source, bip32Versions(network));
+	const publicKey = root.deriveChild(branch).deriveChild(index).publicKey;
+	if (!publicKey) throw new Error('공개키를 파생할 수 없습니다.');
+	return publicKey;
 }
 
 export function sourceError(

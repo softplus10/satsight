@@ -75,6 +75,21 @@ class WalletState {
 		this.settings = settings;
 	}
 
+	async connectKeyOrigin(id: string, exportedKey: string) {
+		const wallet = this.wallets.find((item) => item.id === id);
+		if (!wallet || wallet.kind !== 'xpub') throw new Error('확장 공개키 지갑을 찾을 수 없습니다.');
+		const parsed = parseExtendedPublicKey(exportedKey, wallet.network);
+		if (!parsed?.origin) throw new Error('[fingerprint/path]가 포함된 공개키를 가져와 주세요.');
+		if (parsed.source !== wallet.source) throw new Error('현재 지갑과 다른 확장 공개키입니다.');
+		if (parsed.scriptType && parsed.scriptType !== wallet.scriptType) {
+			throw new Error('현재 지갑과 주소 형식이 다른 공개키입니다.');
+		}
+		const updated = { ...wallet, keyOrigin: parsed.origin, updatedAt: new Date().toISOString() };
+		await repository.putWallet(updated);
+		this.wallets = this.wallets.map((item) => (item.id === id ? updated : item));
+		return updated;
+	}
+
 	async syncWallet(id: string) {
 		const wallet = this.wallets.find((item) => item.id === id);
 		if (!wallet || this.syncingIds.includes(id)) return;

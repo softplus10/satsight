@@ -21,7 +21,7 @@ export interface SyncResult {
 	transactions: WalletTransaction[];
 }
 
-function apiBase(settings: AppSettings, wallet: Wallet) {
+export function esploraApiBase(settings: AppSettings, wallet: Wallet) {
 	const base = settings.apiUrl.trim().replace(/\/$/, '');
 	if (wallet.network === 'testnet' && /^https:\/\/blockstream\.info\/api$/i.test(base)) {
 		return 'https://blockstream.info/testnet/api';
@@ -166,7 +166,7 @@ export async function syncWatchWallet(
 	settings: AppSettings
 ): Promise<SyncResult> {
 	if (!navigator.onLine) throw new Error('오프라인에서는 동기화할 수 없습니다.');
-	const base = apiBase(settings, wallet);
+	const base = esploraApiBase(settings, wallet);
 	if (!/^https?:\/\//.test(base)) throw new Error('Esplora API 주소를 확인하세요.');
 	const known = new Map(knownAddresses.map((item) => [`${item.branch}:${item.index}`, item]));
 	const gapLimit = normalizeGapLimit(settings.gapLimit);
