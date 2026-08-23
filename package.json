@@ -47,6 +47,7 @@
 		"@capacitor/ios": "^8.5.0",
 		"@capacitor/network": "^8.0.0",
 		"@capacitor/status-bar": "^8.0.0",
+		"@keystonehq/bc-ur-registry": "^0.8.0",
 		"@lucide/svelte": "^1.31.0",
 		"@scure/base": "^2.0.0",
 		"@scure/bip32": "^2.0.1",
@@ -54,6 +55,7 @@
 		"@tauri-apps/api": "^2.11.1",
 		"@tauri-apps/plugin-opener": "^2.5.4",
 		"@zxing/browser": "^0.2.1",
+		"buffer": "^6.0.3",
 		"idb": "^8.0.3"
 	}
 }

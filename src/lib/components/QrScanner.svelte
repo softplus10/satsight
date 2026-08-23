@@ -9,6 +9,7 @@
 	let controls: IScannerControls | undefined;
 	let starting = $state(true);
 	let error = $state('');
+	let scanError = $state('');
 	let segmentProgress = $state<QrSegmentProgress>();
 	let disposed = false;
 	const segments = new QrSegmentCollector();
@@ -26,6 +27,7 @@
 	async function start() {
 		controls?.stop();
 		error = '';
+		scanError = '';
 		starting = true;
 		if (!navigator.mediaDevices?.getUserMedia) {
 			error = '이 환경에서는 카메라 스캔을 지원하지 않습니다.';
@@ -51,6 +53,11 @@
 					if (!result || disposed) return;
 					const scanned = segments.add(result.getText());
 					segmentProgress = scanned.progress;
+					if (scanned.error) {
+						scanner.stop();
+						scanError = scanned.error;
+						return;
+					}
 					if (scanned.value === undefined) return;
 					scanner.stop();
 					onResult(scanned.value);
@@ -63,6 +70,13 @@
 		} finally {
 			starting = false;
 		}
+	}
+
+	function restartScan() {
+		segments.reset();
+		segmentProgress = undefined;
+		scanError = '';
+		void start();
 	}
 
 	onMount(() => {
@@ -117,10 +131,17 @@
 					<button class="button secondary" onclick={start}>다시 시도</button>
 				</div>
 			{/if}
+			{#if scanError}
+				<div class="camera-state error">
+					<Camera size={28} /><strong>QR을 가져올 수 없어요</strong>
+					<p>{scanError}</p>
+					<button class="button secondary" onclick={restartScan}>처음부터 다시 스캔</button>
+				</div>
+			{/if}
 		</div>
 		<p class="scanner-help">
-			비트코인 주소, 확장 공개키 또는 output descriptor를 프레임 안에 맞춰 주세요. 분할 QR은 완료될
-			때까지 카메라를 유지해 주세요.
+			비트코인 주소, 확장 공개키 또는 output descriptor를 프레임 안에 맞춰 주세요. Specter 분할 QR과
+			SeedSigner animated UR은 완료될 때까지 카메라를 유지해 주세요.
 		</p>
 	</div>
 </div>
