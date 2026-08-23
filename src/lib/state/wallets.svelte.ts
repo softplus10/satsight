@@ -4,6 +4,7 @@ import { parseExtendedPublicKey, parseWalletQr } from '$lib/domain/bitcoin';
 import type { AppSettings, Wallet, WalletDraft, WalletTransaction } from '$lib/domain/types';
 import { DEFAULT_SETTINGS } from '$lib/domain/types';
 import * as repository from '$lib/db/database';
+import { createLocalId } from '$lib/platform/id';
 import { syncWatchWallet } from '$lib/sync/esplora';
 
 const COLORS = ['#f5a623', '#5f8cff', '#9b7cff', '#43c59e', '#ef6f6c', '#57b8ff'];
@@ -37,7 +38,7 @@ class WalletState {
 			draft.kind === 'xpub' ? parseExtendedPublicKey(draft.source, draft.network) : null;
 		const wallet: Wallet = {
 			...draft,
-			id: crypto.randomUUID(),
+			id: createLocalId(),
 			source: extendedKey?.source ?? draft.source.trim().replaceAll(/\s/g, ''),
 			keyOrigin: extendedKey?.origin ?? draft.keyOrigin,
 			scriptType: extendedKey?.scriptType ?? draft.scriptType,
