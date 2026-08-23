@@ -44,6 +44,21 @@ describe('bitcoin helpers', () => {
 		});
 	});
 
+	it('parses a standalone key expression with SeedSigner origin information', () => {
+		expect(parseExtendedPublicKey(`[d34db33f/84'/0'/0']${xpub}`)).toEqual({
+			source: xpub,
+			network: 'mainnet',
+			scriptType: 'native-segwit'
+		});
+		expect(parseExtendedPublicKey(`[d34db33f/49h/0h/0h]${ypub}`)).toEqual({
+			source: xpub,
+			network: 'mainnet',
+			scriptType: 'nested-segwit'
+		});
+		expect(parseExtendedPublicKey(`[d34db33f/84'/1'/0']${xpub}`)).toBeNull();
+		expect(parseExtendedPublicKey(`[nothex/84'/0'/0']${xpub}`)).toBeNull();
+	});
+
 	it('derives deterministic, network-aware addresses', () => {
 		const first = deriveAddress(xpub, 'mainnet', 'native-segwit', 0, 0);
 		const second = deriveAddress(xpub, 'mainnet', 'native-segwit', 0, 1);
@@ -84,6 +99,10 @@ describe('bitcoin helpers', () => {
 			scriptType: 'nested-segwit'
 		});
 		expect(parseWalletQr(`wpkh(${zpub}/0/*)`)).toMatchObject({
+			source: xpub,
+			scriptType: 'native-segwit'
+		});
+		expect(parseWalletQr(`[d34db33f/84h/0h/0h]${zpub}`)).toMatchObject({
 			source: xpub,
 			scriptType: 'native-segwit'
 		});

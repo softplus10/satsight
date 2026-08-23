@@ -7,7 +7,7 @@ SvelteKit과 Capacitor로 만든 비트코인 전용 Watch Only Wallet입니다.
 - SvelteKit `ssr = false` 기반 완전한 CSR 앱
 - IndexedDB 기반 오프라인 우선 저장소
 - Mainnet/Testnet 단일 주소 및 `xpub`/`ypub`/`zpub`, `tpub`/`upub`/`vpub` 지갑
-- 카메라 권한 기반 QR 가져오기(BIP21, 주소, 확장 공개키, descriptor, Specter 분할 QR)
+- 카메라 권한 기반 QR 가져오기(BIP21, 주소, `[origin]xpub`, descriptor, Specter 분할 QR)
 - Legacy, Nested SegWit, Native SegWit, Taproot 주소 파생
 - Esplora 호환 API를 통한 수동/선택적 자동 동기화
 - PWA 서비스 워커 앱 셸 캐시

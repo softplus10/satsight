@@ -17,6 +17,7 @@ export interface ParsedExtendedPublicKey {
 
 const MAINNET_VERSIONS: Versions = { public: 0x0488b21e, private: 0x0488ade4 };
 const TESTNET_VERSIONS: Versions = { public: 0x043587cf, private: 0x04358394 };
+const KEY_ORIGIN = /^\[([0-9a-fA-F]{8})((?:\/\d+(?:['hH])?)*)\](.+)$/;
 const EXTENDED_PUBLIC_KEY_VERSIONS: Record<
 	string,
 	{ versions: Versions; network: BitcoinNetwork; scriptType?: ScriptType }
@@ -70,9 +71,41 @@ export function parseExtendedPublicKey(
 	key: string,
 	network?: BitcoinNetwork
 ): ParsedExtendedPublicKey | null {
-	const value = cleanSource(key);
+	let value = cleanSource(key);
+	let originScriptType: ScriptType | undefined;
+	let originNetwork: BitcoinNetwork | undefined;
+	const origin = value.match(KEY_ORIGIN);
+	if (origin) {
+		const path = origin[2]
+			.slice(1)
+			.split('/')
+			.filter(Boolean)
+			.map((component) => Number(component.replace(/['hH]$/, '')));
+		if (path.some((component) => !Number.isSafeInteger(component) || component >= 0x80000000)) {
+			return null;
+		}
+		originScriptType =
+			path[0] === 44
+				? 'legacy'
+				: path[0] === 49
+					? 'nested-segwit'
+					: path[0] === 84
+						? 'native-segwit'
+						: path[0] === 86
+							? 'taproot'
+							: undefined;
+		originNetwork = path[1] === 0 ? 'mainnet' : path[1] === 1 ? 'testnet' : undefined;
+		value = origin[3];
+	}
 	const format = EXTENDED_PUBLIC_KEY_VERSIONS[value.slice(0, 4)];
-	if (!format || (network && format.network !== network)) return null;
+	if (
+		!format ||
+		(network && format.network !== network) ||
+		(originNetwork && originNetwork !== format.network) ||
+		(originScriptType && format.scriptType && originScriptType !== format.scriptType)
+	) {
+		return null;
+	}
 	try {
 		const node = HDKey.fromExtendedKey(value, format.versions);
 		if (node.privateKey !== null || !node.publicKey || !node.chainCode) return null;
@@ -84,7 +117,11 @@ export function parseExtendedPublicKey(
 			chainCode: node.chainCode,
 			publicKey: node.publicKey
 		}).publicExtendedKey;
-		return { source: normalized, network: format.network, scriptType: format.scriptType };
+		return {
+			source: normalized,
+			network: format.network,
+			scriptType: originScriptType ?? format.scriptType
+		};
 	} catch {
 		return null;
 	}
