@@ -57,6 +57,15 @@ npm run lint
 npm run build
 ```
 
+## Cloudflare Workers
+
+`build/`의 CSR 정적 파일만 Workers Static Assets로 배포합니다. 별도의 Worker 서버 코드는 사용하지 않으며, 동적 route는 SPA fallback으로 `index.html`을 반환합니다.
+
+```sh
+npm run cf:dev
+npm run deploy
+```
+
 ## Capacitor
 
 웹 빌드를 네이티브 프로젝트에 반영합니다.
