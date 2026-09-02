@@ -1,4 +1,4 @@
-package io.axoneo.satsight;
+package dev.hskim.satsight;
 
 import com.getcapacitor.BridgeActivity;
 

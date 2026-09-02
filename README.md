@@ -72,7 +72,7 @@ npm run cap:android
 npm run cap:ios
 ```
 
-Android 프로젝트는 `android/`, iOS 프로젝트는 `ios/`에 있습니다. 앱 식별자는 `io.axoneo.satsight`입니다.
+Android 프로젝트는 `android/`, iOS 프로젝트는 `ios/`에 있습니다. Android 앱 식별자는 `dev.hskim.satsight`입니다.
 
 ## Tauri 데스크톱
 

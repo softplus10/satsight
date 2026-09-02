@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-	appId: 'io.axoneo.satsight',
+	appId: 'dev.hskim.satsight',
 	appName: 'SatSight',
 	webDir: 'build',
 	server: {

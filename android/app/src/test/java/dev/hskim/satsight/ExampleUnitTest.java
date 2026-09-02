@@ -1,4 +1,4 @@
-package com.getcapacitor.myapp;
+package dev.hskim.satsight;
 
 import static org.junit.Assert.*;
 
