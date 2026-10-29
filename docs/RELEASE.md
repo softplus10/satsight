@@ -2,13 +2,15 @@
 
 ## 필요한 CI 작업
 
-1. PR 및 master 변경: npm ci, Svelte/TypeScript 검사, lint, Vitest, 정적 웹 빌드.
-2. Windows/Linux amd64: Rust 형식 검사 및 Tauri 프로덕션 빌드.
-3. Android: 웹 빌드, Capacitor sync, Android lint, 단위 테스트, debug APK 빌드.
-4. FreeBSD/OpenBSD amd64: 각 OS VM에서 Rust/GTK/WebKitGTK로 네이티브 빌드.
-5. 릴리스 태그 형식 및 master 포함 여부 검증.
-6. 모든 플랫폼 릴리스 빌드, Android 서명, 산출물 누락 검사 및 SHA256SUMS 생성.
-7. 모든 빌드 성공 후 하나의 GitHub Release에 업로드하고 공개.
+1. PR 및 master 변경: npm ci 이후 Svelte/TypeScript 검사, lint, Vitest만 실행.
+2. 릴리스 태그: 태그 형식 및 master 포함 여부 검증, 타입 검사, lint, Vitest.
+3. 릴리스 태그: Windows/Linux amd64 Tauri 프로덕션 빌드.
+4. 릴리스 태그: FreeBSD/OpenBSD amd64 VM 네이티브 빌드 및 tar.gz 패키징.
+5. 릴리스 태그: Android 웹 빌드, Capacitor sync, 서명 APK/AAB 빌드.
+6. 모든 산출물 누락 검사 및 SHA256SUMS 생성 후 단일 GitHub Release 공개.
+
+PR에서는 웹 빌드와 네이티브 플랫폼 빌드를 실행하지 않습니다.
+플랫폼별 빌드는 릴리스 태그에서 한 번씩만 실행합니다.
 
 ## 배포 트리거
 

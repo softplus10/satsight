@@ -1,9 +1,6 @@
 name: BSD native builds
 
 on:
-  pull_request:
-  push:
-    branches: [master]
   workflow_call:
     inputs:
       tag:
