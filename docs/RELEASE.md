@@ -36,8 +36,8 @@ Settings → Secrets and variables → Actions에 다음 repository secrets를 �
 
 | Secret                    | 내용                                   |
 | ------------------------- | -------------------------------------- |
-| ANDROID_KEYSTORE_BASE64    | 배포용 JKS 파일을 base64로 인코딩한 값   |
-| ANDROID_KEYSTORE_PASSWORD  | JKS 비밀번호                           |
+| ANDROID_KEYSTORE_BASE64   | 배포용 JKS 파일을 base64로 인코딩한 값 |
+| ANDROID_KEYSTORE_PASSWORD | JKS 비밀번호                           |
 | ANDROID_KEY_ALIAS         | 서명 키 alias                          |
 | ANDROID_KEY_PASSWORD      | 키 비밀번호                            |
 
