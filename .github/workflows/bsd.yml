@@ -1,0 +1,71 @@
+name: BSD native builds
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        default: ''
+      version:
+        type: string
+        default: snapshot
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [freebsd, openbsd]
+    env:
+      VERSION: ${{ inputs.version || 'snapshot' }}
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Apply release version
+        if: inputs.tag != ''
+        run: node scripts/release-version.mjs "$TAG"
+      - run: npm run build
+      - name: Remove host dependencies before VM sync
+        run: rm -rf node_modules .svelte-kit
+      - name: Native FreeBSD build
+        if: matrix.platform == 'freebsd'
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: '14.3'
+          arch: x86_64
+          envs: VERSION
+          mem: 6144
+          prepare: |
+            set -eu
+            pkg install -y rust pkgconf gtk3 webkit2-gtk_41 libsoup3 libayatana-appindicator
+          run: sh scripts/build-bsd.sh
+      - name: Native OpenBSD build
+        if: matrix.platform == 'openbsd'
+        uses: vmactions/openbsd-vm@v1
+        with:
+          release: '8.0'
+          arch: x86_64
+          envs: VERSION
+          mem: 6144
+          prepare: |
+            set -eu
+            pkg_add rust pkgconf gtk+3 webkitgtk41
+          run: sh scripts/build-bsd.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}
+          path: dist/*.tar.gz
+          if-no-files-found: error

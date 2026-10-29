@@ -1,0 +1,185 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*', '*.*.*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      code: ${{ steps.version.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Require a commit from master
+        run: |
+          git fetch origin master
+          git merge-base --is-ancestor HEAD origin/master
+      - name: Validate and normalize tag
+        id: version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: node scripts/release-version.mjs "$TAG"
+
+  checks:
+    needs: validate
+    uses: ./.github/workflows/ci.yml
+
+  bsd:
+    needs: [validate, checks]
+    uses: ./.github/workflows/bsd.yml
+    with:
+      tag: ${{ github.ref_name }}
+      version: ${{ needs.validate.outputs.version }}
+
+  desktop:
+    needs: [validate, checks]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            platform: windows
+            binary: satsight.exe
+          - os: ubuntu-24.04
+            platform: linux
+            binary: satsight
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - run: npm ci
+      - name: Set release version
+        env:
+          TAG: ${{ github.ref_name }}
+        shell: bash
+        run: node scripts/release-version.mjs "$TAG"
+      - run: npm run tauri:build -- --no-bundle
+      - name: Package amd64 binary
+        shell: bash
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+          PLATFORM: ${{ matrix.platform }}
+          BINARY: ${{ matrix.binary }}
+        run: |
+          mkdir -p dist package
+          cp "src-tauri/target/release/$BINARY" LICENSE package/
+          if [ "$PLATFORM" = windows ]; then
+            7z a "dist/satsight-${VERSION}-windows-amd64.zip" ./package/*
+          else
+            tar -czf "dist/satsight-${VERSION}-linux-amd64.tar.gz" -C package .
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}
+          path: dist/*
+          if-no-files-found: error
+
+  android:
+    needs: [validate, checks]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+      - run: npm ci
+      - run: npm run build && npx cap sync android
+      - name: Build signed release APK and bundle
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_VERSION_NAME: ${{ needs.validate.outputs.version }}
+          ANDROID_VERSION_CODE: ${{ needs.validate.outputs.code }}
+        run: |
+          set -euo pipefail
+          : "${KEYSTORE_BASE64:?Missing ANDROID_KEYSTORE_BASE64}"
+          : "${ANDROID_KEYSTORE_PASSWORD:?Missing ANDROID_KEYSTORE_PASSWORD}"
+          : "${ANDROID_KEY_ALIAS:?Missing ANDROID_KEY_ALIAS}"
+          : "${ANDROID_KEY_PASSWORD:?Missing ANDROID_KEY_PASSWORD}"
+          export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/satsight-release.jks"
+          trap 'rm -f "$ANDROID_KEYSTORE_PATH"' EXIT
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
+          (cd android && bash gradlew assembleRelease bundleRelease)
+          mkdir -p dist
+          cp android/app/build/outputs/apk/release/app-release.apk "dist/satsight-${ANDROID_VERSION_NAME}-android.apk"
+          cp android/app/build/outputs/bundle/release/app-release.aab "dist/satsight-${ANDROID_VERSION_NAME}-android.aab"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-android
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    needs: [validate, desktop, android, bsd]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+      VERSION: ${{ needs.validate.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: dist
+      - name: Verify every artifact and generate checksums
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          for file in \
+            "satsight-$VERSION-windows-amd64.zip" \
+            "satsight-$VERSION-linux-amd64.tar.gz" \
+            "satsight-$VERSION-openbsd-amd64.tar.gz" \
+            "satsight-$VERSION-freebsd-amd64.tar.gz" \
+            "satsight-$VERSION-android.apk" \
+            "satsight-$VERSION-android.aab"; do
+            test -s "$file"
+          done
+          sha256sum satsight-* > SHA256SUMS
+      - name: Stage all files in a draft, then publish
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" --json isDraft > release.json; then
+            test "$(jq -r .isDraft release.json)" = true
+          else
+            gh release create "$TAG" --verify-tag --draft --title "SatSight $VERSION" --generate-notes
+          fi
+          gh release upload "$TAG" dist/* --clobber
+          gh release edit "$TAG" --draft=false
