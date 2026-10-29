@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: release
+  group: release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
@@ -48,12 +48,44 @@ jobs:
             exit 1
           fi
 
+      - name: Require a newer version than published releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh api --paginate --slurp "repos/$GH_REPO/releases?per_page=100" > releases.json
+          node scripts/check-release-version.mjs "$TAG" < releases.json
+
   checks:
     needs: validate
     uses: ./.github/workflows/ci.yml
 
-  bsd:
+  web:
     needs: [validate, checks]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Set release version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: node scripts/release-version.mjs "$TAG"
+      - run: npm run build
+      - run: tar -czf frontend.tar.gz build
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: frontend
+          path: frontend.tar.gz
+          if-no-files-found: error
+
+  bsd:
+    needs: [validate, web]
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     strategy:
@@ -69,12 +101,14 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
       - name: Apply release version
         run: node scripts/release-version.mjs "$TAG"
-      - run: npm run build
-      - name: Remove host dependencies before VM sync
-        run: rm -rf node_modules .svelte-kit
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: frontend
+      - name: Extract shared frontend
+        shell: bash
+        run: tar -xzf frontend.tar.gz
       - name: Native FreeBSD build
         if: matrix.platform == 'freebsd'
         uses: vmactions/freebsd-vm@c46abacb49f09938ca4e1702d15d836285d694cc # v1
@@ -106,7 +140,7 @@ jobs:
           if-no-files-found: error
 
   desktop:
-    needs: [validate, checks]
+    needs: [validate, web]
     strategy:
       fail-fast: false
       matrix:
@@ -135,7 +169,15 @@ jobs:
           TAG: ${{ github.ref_name }}
         shell: bash
         run: node scripts/release-version.mjs "$TAG"
-      - run: npm run tauri:build -- --no-bundle
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: frontend
+      - name: Extract shared frontend
+        shell: bash
+        run: tar -xzf frontend.tar.gz
+      - name: Build native desktop with shared frontend
+        shell: bash
+        run: npm run tauri:build -- --no-bundle --config '{"build":{"beforeBuildCommand":null}}'
       - name: Package amd64 binary
         shell: bash
         env:
@@ -157,7 +199,7 @@ jobs:
           if-no-files-found: error
 
   android:
-    needs: [validate, checks]
+    needs: [validate, web]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -179,7 +221,13 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
         run: node scripts/release-version.mjs "$TAG"
-      - run: npm run build && npx cap sync android
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: frontend
+      - name: Extract shared frontend
+        shell: bash
+        run: tar -xzf frontend.tar.gz
+      - run: npx cap sync android
       - name: Build signed release APK and bundle
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -219,6 +267,10 @@ jobs:
       TAG: ${{ github.ref_name }}
       VERSION: ${{ needs.validate.outputs.version }}
     steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           pattern: release-*
@@ -246,5 +298,8 @@ jobs:
           else
             gh release create "$TAG" --verify-tag --draft --title "SatSight $VERSION" --generate-notes
           fi
+          gh api --paginate --slurp "repos/$GH_REPO/releases?per_page=100" > releases.json
+          node scripts/check-release-version.mjs "$TAG" < releases.json
           gh release upload "$TAG" dist/* --clobber
-          gh release edit "$TAG" --draft=false
+          release_id=$(gh api "repos/$GH_REPO/releases/tags/$TAG" --jq .id)
+          gh api --method PATCH "repos/$GH_REPO/releases/$release_id" -F draft=false -f make_latest=legacy

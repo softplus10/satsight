@@ -16,7 +16,7 @@ for (const path of ['package.json', 'package-lock.json']) {
 	const data = JSON.parse(fs.readFileSync(path, 'utf8'));
 	data.version = version;
 	if (data.packages?.['']) data.packages[''].version = version;
-	fs.writeFileSync(path, JSON.stringify(data, null, 2) + '\n');
+	fs.writeFileSync(path, JSON.stringify(data, null, '\t') + '\n');
 }
 const configPath = 'src-tauri/tauri.conf.json';
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));

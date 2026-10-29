@@ -6,11 +6,12 @@
 2. 릴리스 태그: 태그 형식 및 master 포함 여부 검증, 타입 검사, lint, Vitest.
 3. 릴리스 태그: Windows/Linux amd64 Tauri 프로덕션 빌드.
 4. 릴리스 태그: FreeBSD/OpenBSD amd64 VM 네이티브 빌드 및 tar.gz 패키징.
-5. 릴리스 태그: Android 웹 빌드, Capacitor sync, 서명 APK/AAB 빌드.
+5. 릴리스 태그: Capacitor sync 및 서명 APK/AAB 빌드.
 6. 모든 산출물 누락 검사 및 SHA256SUMS 생성 후 단일 GitHub Release 공개.
 
 PR에서는 웹 빌드와 네이티브 플랫폼 빌드를 실행하지 않습니다.
 플랫폼별 빌드는 릴리스 태그에서 한 번씩만 실행합니다.
+태그 버전을 주입한 웹 빌드는 한 번만 수행하고 frontend 아티팩트로 모든 플랫폼에 공유합니다.
 
 ## 배포 트리거
 
@@ -27,12 +28,14 @@ git push origin v0.1.1
 ```
 
 같은 버전에 v0.1.1과 0.1.1이 모두 존재하면 배포를 거부합니다.
-릴리스 실행은 직렬 처리하며 원격 저장소의 반대 표기 태그를 검사합니다.
+서로 다른 태그의 실행은 병렬로 진행하며 원격 저장소의 반대 표기 태그를 검사합니다.
 모든 플랫폼의 네이티브 버전과 앱 화면 버전은 태그 버전으로 맞춥니다.
 태그 형식은 정수 3개이며 선행 0, prerelease, build metadata는 허용하지 않습니다.
 Android versionCode는 major * 1000000 + minor * 1000 + patch입니다.
 major는 2099 이하, minor/patch는 999 이하이며 0.0.0은 허용하지 않습니다.
-버전은 이전 배포보다 증가시켜야 Android 업데이트가 가능합니다.
+버전은 기존 공개 정식 릴리스보다 커야 하며, 빌드 전과 게시 직전에 검사합니다.
+같거나 낮은 버전은 배포를 거부합니다. draft와 prerelease는 비교에서 제외합니다.
+동시 배포의 완료 순서가 달라져도 최신 릴리스는 GitHub의 make_latest=legacy 정책으로 결정합니다.
 
 ## Android 서명 설정
 
