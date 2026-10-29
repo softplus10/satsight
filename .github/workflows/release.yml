@@ -78,7 +78,7 @@ jobs:
         run: node scripts/release-version.mjs "$TAG"
       - run: npm run build
       - run: tar -czf frontend.tar.gz build
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: frontend
           path: frontend.tar.gz
@@ -132,7 +132,7 @@ jobs:
             set -eu
             pkg_add rust pkgconf gtk+3 webkitgtk41
           run: sh scripts/build-bsd.sh
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-${{ matrix.platform }}
           path: dist/*.tar.gz
@@ -191,7 +191,7 @@ jobs:
           else
             tar -czf "dist/satsight-${VERSION}-linux-amd64.tar.gz" -C package .
           fi
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-${{ matrix.platform }}
           path: dist/*
@@ -248,7 +248,7 @@ jobs:
           mkdir -p dist
           cp android/app/build/outputs/apk/release/app-release.apk "dist/satsight-${ANDROID_VERSION_NAME}-android.apk"
           cp android/app/build/outputs/bundle/release/app-release.aab "dist/satsight-${ANDROID_VERSION_NAME}-android.aab"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-android
           path: dist/*
