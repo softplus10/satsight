@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { version as appVersion } from '../../../package.json';
 	import { Check, Database, Globe2, HardDrive, ShieldCheck } from '@lucide/svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import { DEFAULT_SETTINGS, type AppSettings } from '$lib/domain/types';
@@ -87,5 +88,5 @@
 	<button class="button primary full" onclick={save}
 		>{#if saved}<Check size={18} /> 저장됨{:else}설정 저장{/if}</button
 	>
-	<p class="version">SatSight 0.1.0 · Bitcoin only</p>
+	<p class="version">SatSight {appVersion} · Bitcoin only</p>
 </main>

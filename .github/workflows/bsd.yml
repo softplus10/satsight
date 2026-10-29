@@ -25,8 +25,8 @@ jobs:
       VERSION: ${{ inputs.version || 'snapshot' }}
       TAG: ${{ inputs.tag }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
           cache: npm
@@ -39,7 +39,7 @@ jobs:
         run: rm -rf node_modules .svelte-kit
       - name: Native FreeBSD build
         if: matrix.platform == 'freebsd'
-        uses: vmactions/freebsd-vm@v1
+        uses: vmactions/freebsd-vm@c46abacb49f09938ca4e1702d15d836285d694cc # v1
         with:
           release: '14.3'
           arch: x86_64
@@ -47,11 +47,11 @@ jobs:
           mem: 6144
           prepare: |
             set -eu
-            pkg install -y rust pkgconf gtk3 webkit2-gtk_41 libsoup3 libayatana-appindicator
+            pkg install -y rust pkgconf bzip2 gtk3 webkit2-gtk_41 libsoup3 libayatana-appindicator
           run: sh scripts/build-bsd.sh
       - name: Native OpenBSD build
         if: matrix.platform == 'openbsd'
-        uses: vmactions/openbsd-vm@v1
+        uses: vmactions/openbsd-vm@f1ca8bc8ecc5b6ef7218e5b914836e067e1546d3 # v1
         with:
           release: '8.0'
           arch: x86_64
@@ -61,7 +61,7 @@ jobs:
             set -eu
             pkg_add rust pkgconf gtk+3 webkitgtk41
           run: sh scripts/build-bsd.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: release-${{ matrix.platform }}
           path: dist/*.tar.gz
