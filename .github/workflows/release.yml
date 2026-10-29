@@ -1,0 +1,304 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*', '*.*.*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      code: ${{ steps.version.outputs.code }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - name: Require a commit from master
+        run: |
+          git fetch origin master
+          git merge-base --is-ancestor HEAD origin/master
+      - name: Validate and normalize tag
+        id: version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: node scripts/release-version.mjs "$TAG"
+      - name: Reject the alternate spelling of this version
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          alternate="$VERSION"
+          if [ "$TAG" = "$VERSION" ]; then alternate="v$VERSION"; fi
+          existing=$(git ls-remote --tags origin "refs/tags/$alternate")
+          if [ -n "$existing" ]; then
+            echo "Duplicate version tag exists: $alternate" >&2
+            exit 1
+          fi
+
+      - name: Require a newer version than published releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh api --paginate --slurp "repos/$GH_REPO/releases?per_page=100" > releases.json
+          node scripts/check-release-version.mjs "$TAG" < releases.json
+
+  checks:
+    needs: validate
+    uses: ./.github/workflows/ci.yml
+
+  web:
+    needs: [validate, checks]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Set release version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: node scripts/release-version.mjs "$TAG"
+      - run: npm run build
+      - run: tar -czf frontend.tar.gz build
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: frontend
+          path: frontend.tar.gz
+          if-no-files-found: error
+
+  bsd:
+    needs: [validate, web]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [freebsd, openbsd]
+    env:
+      VERSION: ${{ needs.validate.outputs.version }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - name: Apply release version
+        run: node scripts/release-version.mjs "$TAG"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: frontend
+      - name: Extract shared frontend
+        shell: bash
+        run: tar -xzf frontend.tar.gz
+      - name: Native FreeBSD build
+        if: matrix.platform == 'freebsd'
+        uses: vmactions/freebsd-vm@c46abacb49f09938ca4e1702d15d836285d694cc # v1
+        with:
+          release: '14.3'
+          arch: x86_64
+          envs: VERSION
+          mem: 6144
+          prepare: |
+            set -eu
+            pkg install -y rust pkgconf bzip2 gtk3 webkit2-gtk_41 libsoup3 libayatana-appindicator
+          run: sh scripts/build-bsd.sh
+      - name: Native OpenBSD build
+        if: matrix.platform == 'openbsd'
+        uses: vmactions/openbsd-vm@f1ca8bc8ecc5b6ef7218e5b914836e067e1546d3 # v1
+        with:
+          release: '8.0'
+          arch: x86_64
+          envs: VERSION
+          mem: 6144
+          prepare: |
+            set -eu
+            pkg_add rust pkgconf gtk+3 webkitgtk41
+          run: sh scripts/build-bsd.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-${{ matrix.platform }}
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  desktop:
+    needs: [validate, web]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            platform: windows
+            binary: satsight.exe
+          - os: ubuntu-24.04
+            platform: linux
+            binary: satsight
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev libxdo-dev libssl-dev librsvg2-dev patchelf
+      - run: npm ci
+      - name: Set release version
+        env:
+          TAG: ${{ github.ref_name }}
+        shell: bash
+        run: node scripts/release-version.mjs "$TAG"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: frontend
+      - name: Extract shared frontend
+        shell: bash
+        run: tar -xzf frontend.tar.gz
+      - name: Build native desktop with shared frontend
+        shell: bash
+        run: npm run tauri:build -- --no-bundle --config '{"build":{"beforeBuildCommand":null}}'
+      - name: Package amd64 binary
+        shell: bash
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+          PLATFORM: ${{ matrix.platform }}
+          BINARY: ${{ matrix.binary }}
+        run: |
+          mkdir -p dist package
+          cp "src-tauri/target/release/$BINARY" LICENSE package/
+          if [ "$PLATFORM" = windows ]; then
+            7z a "dist/satsight-${VERSION}-windows-amd64.zip" ./package/*
+          else
+            tar -czf "dist/satsight-${VERSION}-linux-amd64.tar.gz" -C package .
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-${{ matrix.platform }}
+          path: dist/*
+          if-no-files-found: error
+
+  android:
+    needs: [validate, web]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+        with:
+          packages: platform-tools platforms;android-36 build-tools;36.0.0
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
+      - run: npm ci
+      - name: Set release version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: node scripts/release-version.mjs "$TAG"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: frontend
+      - name: Extract shared frontend
+        shell: bash
+        run: tar -xzf frontend.tar.gz
+      - run: npx cap sync android
+      - name: Build signed release APK and bundle
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_VERSION_NAME: ${{ needs.validate.outputs.version }}
+          ANDROID_VERSION_CODE: ${{ needs.validate.outputs.code }}
+        run: |
+          set -euo pipefail
+          : "${KEYSTORE_BASE64:?Missing ANDROID_KEYSTORE_BASE64}"
+          : "${ANDROID_KEYSTORE_PASSWORD:?Missing ANDROID_KEYSTORE_PASSWORD}"
+          : "${ANDROID_KEY_ALIAS:?Missing ANDROID_KEY_ALIAS}"
+          : "${ANDROID_KEY_PASSWORD:?Missing ANDROID_KEY_PASSWORD}"
+          export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/satsight-release.jks"
+          trap 'rm -f "$ANDROID_KEYSTORE_PATH"' EXIT
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
+          (cd android && bash gradlew assembleRelease bundleRelease)
+          mkdir -p dist
+          cp android/app/build/outputs/apk/release/app-release.apk "dist/satsight-${ANDROID_VERSION_NAME}-android.apk"
+          cp android/app/build/outputs/bundle/release/app-release.aab "dist/satsight-${ANDROID_VERSION_NAME}-android.aab"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-android
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    needs: [validate, desktop, android, bsd]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+      VERSION: ${{ needs.validate.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: dist
+      - name: Verify every artifact and generate checksums
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          for file in \
+            "satsight-$VERSION-windows-amd64.zip" \
+            "satsight-$VERSION-linux-amd64.tar.gz" \
+            "satsight-$VERSION-openbsd-amd64.tar.gz" \
+            "satsight-$VERSION-freebsd-amd64.tar.gz" \
+            "satsight-$VERSION-android.apk" \
+            "satsight-$VERSION-android.aab"; do
+            test -s "$file"
+          done
+          sha256sum satsight-* > SHA256SUMS
+      - name: Stage all files in a draft, then publish
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" --json isDraft > release.json; then
+            test "$(jq -r .isDraft release.json)" = true
+          else
+            gh release create "$TAG" --verify-tag --draft --title "SatSight $VERSION" --generate-notes
+          fi
+          gh api --paginate --slurp "repos/$GH_REPO/releases?per_page=100" > releases.json
+          node scripts/check-release-version.mjs "$TAG" < releases.json
+          gh release upload "$TAG" dist/* --clobber
+          release_id=$(gh api "repos/$GH_REPO/releases/tags/$TAG" --jq .id)
+          gh api --method PATCH "repos/$GH_REPO/releases/$release_id" -F draft=false -f make_latest=legacy
