@@ -139,12 +139,11 @@ code {
 	line-height: 1.2;
 	letter-spacing: -0.7px;
 }
-.eyebrow {
-	margin: 0;
-	color: var(--orange);
-	font-size: 9px;
-	font-weight: 800;
-	letter-spacing: 1.6px;
+.subtitle {
+	margin: 0 0 4px;
+	color: #858b94;
+	font-size: 12px;
+	font-weight: 500;
 }
 .dashboard-header h1 {
 	font-size: 26px;
@@ -527,31 +526,6 @@ code {
 	cursor: wait;
 	opacity: 0.55;
 }
-.info-strip {
-	display: flex;
-	gap: 11px;
-	margin-top: 20px;
-	padding: 14px;
-	border-radius: 15px;
-	background: #111921;
-	color: #8793a2;
-}
-.info-strip > span {
-	display: grid;
-	width: 20px;
-	height: 20px;
-	flex: 0 0 auto;
-	place-items: center;
-	border: 1px solid #506174;
-	border-radius: 50%;
-	font-family: serif;
-	font-size: 11px;
-}
-.info-strip p {
-	margin: 0;
-	font-size: 10px;
-	line-height: 1.6;
-}
 
 .form-card {
 	display: grid;
@@ -765,18 +739,6 @@ code {
 	justify-content: space-between;
 	color: #858b94;
 	font-size: 9px;
-}
-.status-dot {
-	display: flex;
-	align-items: center;
-	gap: 5px;
-}
-.status-dot::before {
-	width: 6px;
-	height: 6px;
-	border-radius: 50%;
-	background: var(--green);
-	content: '';
 }
 .hero-balance {
 	margin-top: 22px;
@@ -1365,6 +1327,9 @@ code {
 	font-size: 10px;
 }
 .send-summary code {
+	min-width: 0;
+	overflow-wrap: anywhere;
+	text-align: right;
 	color: #b6bac1;
 }
 .send-buttons {
@@ -1410,38 +1375,6 @@ code {
 .broadcast-success code {
 	color: #8b9691;
 	font-size: 9px;
-}
-.privacy-cards {
-	display: grid;
-	grid-template-columns: repeat(3, 1fr);
-	gap: 7px;
-}
-.privacy-cards > div {
-	display: flex;
-	min-width: 0;
-	align-items: center;
-	flex-direction: column;
-	gap: 8px;
-	padding: 13px 7px;
-	border: 1px solid var(--line);
-	border-radius: 14px;
-	background: var(--surface);
-	color: var(--orange);
-	text-align: center;
-}
-.privacy-cards span {
-	display: flex;
-	min-width: 0;
-	flex-direction: column;
-	gap: 4px;
-}
-.privacy-cards strong {
-	color: #cdd0d5;
-	font-size: 8px;
-}
-.privacy-cards small {
-	color: #69707a;
-	font-size: 7px;
 }
 
 @media (min-width: 760px) {
@@ -1499,35 +1432,6 @@ code {
 	.sidebar nav a.active {
 		background: #232019;
 		color: var(--orange);
-	}
-	.local-note {
-		display: flex;
-		align-items: center;
-		gap: 9px;
-		margin-top: auto;
-		padding: 12px;
-		border: 1px solid var(--line);
-		border-radius: 13px;
-	}
-	.local-note .pulse {
-		width: 7px;
-		height: 7px;
-		border-radius: 50%;
-		background: var(--green);
-		box-shadow: 0 0 0 4px #42c99a18;
-	}
-	.local-note > div {
-		display: flex;
-		flex-direction: column;
-		gap: 3px;
-	}
-	.local-note strong {
-		color: #aeb3bb;
-		font-size: 9px;
-	}
-	.local-note small {
-		color: #606771;
-		font-size: 7px;
 	}
 	.app-content {
 		grid-column: 2;

@@ -1,3 +1,4 @@
+import { t } from '$lib/i18n';
 import { HDKey, type Versions } from '@scure/bip32';
 import { URDecoder } from '@ngraveio/bc-ur';
 import { Buffer } from 'buffer';
@@ -188,6 +189,7 @@ export class QrSegmentCollector {
 		this.parts ??= new Array<string | undefined>(total);
 		if (this.parts.length !== total) return { progress: this.progress() };
 
+		// Frames may arrive out of order or repeat as an animated QR loops.
 		this.parts[index - 1] ??= match[3];
 		const progress = this.progress();
 		if (progress.received !== progress.total) return { progress };
@@ -201,7 +203,7 @@ export class QrSegmentCollector {
 		try {
 			this.urDecoder.receivePart(value);
 		} catch {
-			return { error: '손상되었거나 지원하지 않는 UR QR 조각입니다.' };
+			return { error: t('invalid_ur_fragment') };
 		}
 
 		const progress = this.urProgress();
@@ -210,9 +212,9 @@ export class QrSegmentCollector {
 			const decoded = decodeSeedSignerUr(this.urDecoder);
 			return decoded
 				? { value: decoded, progress: { ...progress, percent: 100 } }
-				: { error: '단일 서명 지갑 공개키가 아닌 UR QR입니다.', progress };
+				: { error: t('single_signature_key_required'), progress };
 		} catch {
-			return { error: 'UR QR의 공개키 정보를 해석하지 못했습니다.', progress };
+			return { error: t('ur_key_decode_failed'), progress };
 		}
 	}
 

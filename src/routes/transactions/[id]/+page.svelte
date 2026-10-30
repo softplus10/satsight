@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t, formatNumber } from '$lib/i18n';
 	import { page } from '$app/state';
 	import { Copy, ExternalLink } from '@lucide/svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -20,20 +21,20 @@
 	}
 </script>
 
-<svelte:head><title>거래 상세 · SatSight</title></svelte:head>
+<svelte:head><title>{t('page_title', { title: t('transaction_details') })}</title></svelte:head>
 <main class="page narrow">
-	<PageHeader title="거래 상세" eyebrow="TRANSACTION" back="/transactions" />
+	<PageHeader title={t('transaction_details')} back="/transactions" />
 	{#if transaction}
 		<section class="tx-hero">
 			<span class:pending={transaction.status === 'pending'}
-				>{transaction.status === 'confirmed' ? '확정됨' : '확정 대기'}</span
+				>{transaction.status === 'confirmed' ? t('confirmed') : t('pending')}</span
 			>
 			<p>
 				{transaction.direction === 'received'
-					? '받은 금액'
+					? t('amount_received')
 					: transaction.direction === 'sent'
-						? '보낸 금액'
-						: '이동 금액'}
+						? t('amount_sent')
+						: t('amount_moved')}
 			</p>
 			<strong class:positive={transaction.direction === 'received'}
 				>{transaction.direction === 'received' ? '+' : '−'}{formatSats(Math.abs(transaction.value))}
@@ -41,25 +42,27 @@
 			>{#if transaction.note}<em>{transaction.note}</em>{/if}
 		</section>
 		<section class="detail-panel standalone">
-			<div><span>지갑</span><strong>{wallet?.name ?? '알 수 없음'}</strong></div>
+			<div><span>{t('wallet')}</span><strong>{wallet?.name ?? t('unknown')}</strong></div>
 			<div>
-				<span>상태</span><strong
+				<span>{t('status')}</span><strong
 					>{transaction.status === 'confirmed'
-						? `${transaction.blockHeight?.toLocaleString()} 블록`
-						: 'Mempool'}</strong
+						? t('block', { height: formatNumber(transaction.blockHeight ?? 0) })
+						: t('pending')}</strong
 				>
 			</div>
 			{#if transaction.fee !== undefined}<div>
-					<span>수수료</span><strong>{formatSats(transaction.fee)} sats</strong>
+					<span>{t('fee')}</span><strong>{formatSats(transaction.fee)} sats</strong>
 				</div>{/if}
 			<div>
-				<span>Transaction ID</span><button class="copy-value" onclick={() => copy(transaction.txid)}
+				<span>{t('transaction_id')}</span><button
+					class="copy-value"
+					onclick={() => copy(transaction.txid)}
 					><code>{shortAddress(transaction.txid, 12, 12)}</code><Copy size={15} /></button
 				>
 			</div>
 		</section>
 		<button class="button secondary full" onclick={openExplorer}
-			><ExternalLink size={17} /> 블록 탐색기에서 보기</button
+			><ExternalLink size={17} /> {t('view_in_explorer')}</button
 		>
 	{/if}
 </main>

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
+	import { scriptTypeLabel } from '$lib/i18n/address-label';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { Copy, Ellipsis, ExternalLink, QrCode, RotateCw, Send, Trash2 } from '@lucide/svelte';
@@ -34,7 +36,7 @@
 	}
 
 	async function remove() {
-		if (!wallet || !confirm(`“${wallet.name}” 지갑을 이 기기에서 삭제할까요?`)) return;
+		if (!wallet || !confirm(t('remove_wallet_confirm', { name: wallet.name }))) return;
 		await walletState.removeWallet(wallet.id);
 		await goto('/wallets');
 	}
@@ -46,9 +48,9 @@
 			await walletState.syncWallet(wallet.id);
 			wallet = walletState.wallets.find((item) => item.id === page.params.id);
 			if (wallet) addresses = await walletState.addresses(wallet.id);
-			syncMessage = '최신 데이터로 동기화했습니다.';
+			syncMessage = t('sync_complete');
 		} catch (cause) {
-			syncMessage = cause instanceof Error ? cause.message : '동기화하지 못했습니다.';
+			syncMessage = cause instanceof Error ? cause.message : t('sync_failed');
 		}
 	}
 
@@ -60,37 +62,51 @@
 	}
 </script>
 
-<svelte:head><title>{wallet?.name ?? '지갑'} · SatSight</title></svelte:head>
+<svelte:head><title>{t('page_title', { title: wallet?.name ?? t('wallet') })}</title></svelte:head>
 <main class="page">
 	{#if wallet}
-		<PageHeader title={wallet.name} eyebrow={wallet.network.toUpperCase()} back="/wallets">
+		<PageHeader
+			title={wallet.name}
+			subtitle={wallet.network === 'mainnet' ? t('mainnet') : t('testnet')}
+			back="/wallets"
+		>
 			{#snippet action()}<div class="header-buttons">
 					<button
 						class="icon-button"
 						class:spinning={walletState.syncingIds.includes(page.params.id ?? '')}
 						onclick={sync}
-						aria-label="지갑 동기화"><RotateCw size={19} /></button
+						aria-label={t('sync_wallet')}><RotateCw size={19} /></button
 					>
 					<div class="menu-wrap">
-						<button class="icon-button" onclick={() => (menu = !menu)} aria-label="메뉴"
+						<button class="icon-button" onclick={() => (menu = !menu)} aria-label={t('menu')}
 							><Ellipsis size={21} /></button
 						>{#if menu}<div class="context-menu">
-								<button onclick={remove}><Trash2 size={16} /> 지갑 삭제</button>
+								<button onclick={remove}><Trash2 size={16} /> {t('remove_wallet')}</button>
 							</div>{/if}
 					</div>
 				</div>{/snippet}
 		</PageHeader>
 		<section class="wallet-hero" style={`--wallet-color:${wallet.color}`}>
 			<div class="hero-top">
-				<span>{wallet.kind === 'xpub' ? '확장 공개키 지갑' : '단일 주소 지갑'}</span><span
-					class="status-dot">관찰 중</span
+				<span
+					>{wallet.kind === 'xpub'
+						? t('extended_public_key_wallet')
+						: t('single_address_wallet')}</span
 				>
 			</div>
 			<div class="hero-balance"><strong>{formatBtc(wallet.balance)}</strong><span>BTC</span></div>
 			<p>{formatSats(wallet.balance)} sats</p>
 			<div class="hero-stats">
-				<div><span>확정 잔액</span><strong>{formatSats(wallet.confirmedBalance)} sats</strong></div>
-				<div><span>거래</span><strong>{wallet.txCount}건</strong></div>
+				<div>
+					<span>{t('confirmed_balance')}</span><strong
+						>{formatSats(wallet.confirmedBalance)} sats</strong
+					>
+				</div>
+				<div>
+					<span>{t('transactions')}</span><strong
+						>{t('transaction_count', { count: wallet.txCount })}</strong
+					>
+				</div>
 			</div>
 		</section>
 		{#if syncMessage}<p class:failed={Boolean(wallet.syncError)} class="sync-message">
@@ -99,26 +115,31 @@
 
 		<div class="detail-actions">
 			{#if wallet.kind === 'xpub'}<a href={`/wallets/${wallet.id}/send`}
-					><Send size={20} /><span>보내기</span></a
+					><Send size={20} /><span>{t('send')}</span></a
 				>{/if}
-			<a href={`/wallets/${wallet.id}/addresses`}><QrCode size={20} /><span>주소 보기</span></a>
-			<button onclick={copySource}
-				><Copy size={20} /><span>{copied ? '복사됨' : '공개 정보 복사'}</span></button
+			<a href={`/wallets/${wallet.id}/addresses`}
+				><QrCode size={20} /><span>{t('addresses')}</span></a
 			>
-			<button onclick={openExplorer}><ExternalLink size={20} /><span>탐색기</span></button>
+			<button onclick={copySource}
+				><Copy size={20} /><span>{copied ? t('copied') : t('copy_public_key_or_address')}</span
+				></button
+			>
+			<button onclick={openExplorer}><ExternalLink size={20} /><span>{t('explorer')}</span></button>
 		</div>
 
 		<section class="section-block">
-			<div class="section-title"><h2>공개 정보</h2></div>
+			<div class="section-title"><h2>{t('public_information')}</h2></div>
 			<div class="detail-panel">
 				<div>
-					<span>{wallet.kind === 'xpub' ? '확장 공개키' : '주소'}</span><code
+					<span>{wallet.kind === 'xpub' ? t('extended_public_key') : t('address')}</span><code
 						>{shortAddress(wallet.source, 14, 12)}</code
 					>
 				</div>
-				<div><span>주소 형식</span><strong>{wallet.scriptType.replace('-', ' ')}</strong></div>
+				<div>
+					<span>{t('address_type')}</span><strong>{scriptTypeLabel(wallet.scriptType)}</strong>
+				</div>
 				{#if wallet.kind === 'xpub'}<div>
-						<span>Descriptor</span><code
+						<span>{t('descriptor')}</span><code
 							>{shortAddress(walletDescriptor(wallet.source, wallet.scriptType), 20, 14)}</code
 						>
 					</div>{/if}
@@ -127,23 +148,23 @@
 
 		<section class="section-block">
 			<div class="section-title">
-				<h2>최근 거래</h2>
-				<a href="/transactions">전체 보기</a>
+				<h2>{t('recent_transactions')}</h2>
+				<a href="/transactions">{t('view_all')}</a>
 			</div>
 			{#if transactions.length}<div class="panel">
 					{#each transactions.slice(0, 5) as transaction (transaction.id)}<TransactionRow
 							{transaction}
 						/>{/each}
 				</div>{:else}<EmptyState
-					title="거래 내역이 없어요"
-					description="온라인 상태에서 동기화하면 이곳에 거래 내역이 표시됩니다."
+					title={t('no_transactions')}
+					description={t('no_transactions_help')}
 				/>{/if}
 		</section>
 	{:else if walletState.ready}
 		<EmptyState
-			title="지갑을 찾을 수 없어요"
-			description="삭제되었거나 이 기기에 없는 지갑입니다."
-			actionLabel="지갑 목록"
+			title={t('wallet_not_found')}
+			description={t('wallet_not_found_help')}
+			actionLabel={t('wallets')}
 			href="/wallets"
 		/>
 	{/if}

@@ -1,3 +1,4 @@
+import { t } from '$lib/i18n';
 import { deriveAddress } from '$lib/domain/bitcoin';
 import { normalizeGapLimit } from '$lib/domain/address-pool';
 import type { AppSettings, Wallet, WalletTransaction, WatchedAddress } from '$lib/domain/types';
@@ -37,11 +38,11 @@ async function fetchJson<T>(url: string): Promise<T> {
 			signal: controller.signal,
 			headers: { Accept: 'application/json' }
 		});
-		if (!response.ok) throw new Error(`동기화 서버 오류 (${response.status})`);
+		if (!response.ok) throw new Error(t('sync_server_error', { status: response.status }));
 		return (await response.json()) as T;
 	} catch (error) {
 		if (error instanceof DOMException && error.name === 'AbortError') {
-			throw new Error('동기화 서버 응답 시간이 초과되었습니다.');
+			throw new Error(t('sync_timeout'));
 		}
 		throw error;
 	} finally {
@@ -70,7 +71,7 @@ async function scanAddress(
 		address,
 		branch,
 		index,
-		label: known?.label ?? (branch === 0 ? `주소 #${index + 1}` : `거스름 #${index + 1}`),
+		label: known?.label ?? '',
 		used: txCount > 0,
 		balance: confirmed + mempool,
 		confirmedBalance: confirmed,
@@ -88,6 +89,8 @@ async function scanBranch(
 	const found: WatchedAddress[] = [];
 	let unused = 0;
 	let index = 0;
+	// This request budget is independent of the gap limit. It currently stops
+	// discovery at index 199 even if no complete unused window was found.
 	const maximum = 200;
 
 	while (unused < gapLimit && index < maximum) {
@@ -100,6 +103,7 @@ async function scanBranch(
 		);
 		for (const address of batch) {
 			found.push(address);
+			// A used address resets the consecutive-unused window for this branch.
 			unused = address.used ? 0 : unused + 1;
 			index += 1;
 			if (unused >= gapLimit) break;
@@ -165,9 +169,9 @@ export async function syncWatchWallet(
 	knownAddresses: WatchedAddress[],
 	settings: AppSettings
 ): Promise<SyncResult> {
-	if (!navigator.onLine) throw new Error('오프라인에서는 동기화할 수 없습니다.');
+	if (!navigator.onLine) throw new Error(t('sync_requires_network'));
 	const base = esploraApiBase(settings, wallet);
-	if (!/^https?:\/\//.test(base)) throw new Error('Esplora API 주소를 확인하세요.');
+	if (!/^https?:\/\//.test(base)) throw new Error(t('invalid_api_url'));
 	const known = new Map(knownAddresses.map((item) => [`${item.branch}:${item.index}`, item]));
 	const gapLimit = normalizeGapLimit(settings.gapLimit);
 	const addresses =
@@ -183,6 +187,7 @@ export async function syncWatchWallet(
 		used.map((address) => addressTransactions(base, address.address))
 	);
 	const unique = new Map(
+		// A wallet transaction may appear in several receive/change address histories.
 		transactionLists.flat().map((transaction) => [transaction.txid, transaction])
 	);
 	const watched = new Set(addresses.map((address) => address.address));

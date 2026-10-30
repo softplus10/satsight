@@ -1,3 +1,4 @@
+import { t } from '$lib/i18n';
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import { browser } from '$app/environment';
 import {
@@ -19,10 +20,12 @@ interface SatSightSchema extends DBSchema {
 	settings: { key: string; value: AppSettings };
 }
 
+// Share the opening promise so concurrent page mounts use the same connection.
+// These stores contain public wallet data only; signing keys never enter the DB.
 let database: Promise<IDBPDatabase<SatSightSchema>> | undefined;
 
 function db() {
-	if (!browser) throw new Error('로컬 데이터베이스는 브라우저에서만 사용할 수 있습니다.');
+	if (!browser) throw new Error(t('storage_unavailable'));
 	database ??= openDB<SatSightSchema>('satsight', 1, {
 		upgrade(store) {
 			const wallets = store.createObjectStore('wallets', { keyPath: 'id' });

@@ -1,14 +1,15 @@
 <script lang="ts">
+	import { t, formatDate } from '$lib/i18n';
 	import { ArrowDownLeft, ArrowUpRight, RefreshCw } from '@lucide/svelte';
 	import { formatSats, shortAddress } from '$lib/domain/bitcoin';
 	import type { WalletTransaction } from '$lib/domain/types';
 	let { transaction }: { transaction: WalletTransaction } = $props();
 	const label = $derived(
 		transaction.direction === 'received'
-			? '받음'
+			? t('received')
 			: transaction.direction === 'sent'
-				? '보냄'
-				: '내부 이동'
+				? t('sent')
+				: t('self_transfer')
 	);
 	const Icon = $derived(
 		transaction.direction === 'received'
@@ -18,12 +19,12 @@
 				: RefreshCw
 	);
 	const date = $derived(
-		new Intl.DateTimeFormat('ko-KR', {
+		formatDate(transaction.firstSeen * 1000, {
 			month: 'short',
 			day: 'numeric',
 			hour: '2-digit',
 			minute: '2-digit'
-		}).format(transaction.firstSeen * 1000)
+		})
 	);
 </script>
 
@@ -44,6 +45,6 @@
 					? '−'
 					: ''}{formatSats(Math.abs(transaction.value))}</strong
 		>
-		<span>sats · {transaction.status === 'confirmed' ? '확정' : '대기'}</span>
+		<span>sats · {transaction.status === 'confirmed' ? t('confirmed') : t('pending')}</span>
 	</div>
 </a>

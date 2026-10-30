@@ -1,7 +1,8 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import { onMount } from 'svelte';
 	import { version as appVersion } from '../../../package.json';
-	import { Check, Database, Globe2, HardDrive, ShieldCheck } from '@lucide/svelte';
+	import { Check, Globe2 } from '@lucide/svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import { DEFAULT_SETTINGS, type AppSettings } from '$lib/domain/types';
 	import { walletState } from '$lib/state/wallets.svelte';
@@ -18,20 +19,20 @@
 	}
 </script>
 
-<svelte:head><title>설정 · SatSight</title></svelte:head>
+<svelte:head><title>{t('page_title', { title: t('settings') })}</title></svelte:head>
 <main class="page narrow">
-	<PageHeader title="설정" eyebrow="PREFERENCES" />
+	<PageHeader title={t('settings')} />
 	<section class="settings-section">
-		<h2>표시</h2>
+		<h2>{t('display')}</h2>
 		<div class="settings-panel">
 			<label
-				><span><strong>비트코인 단위</strong><small>잔액을 표시할 기본 단위</small></span><select
-					bind:value={form.currency}
+				><span><strong>{t('bitcoin_unit')}</strong><small>{t('default_balance_unit')}</small></span
+				><select bind:value={form.currency}
 					><option value="BTC">BTC</option><option value="sats">sats</option></select
 				></label
 			><label
-				><span><strong>법정화폐</strong><small>참고 가격에 사용할 통화</small></span><select
-					bind:value={form.fiatCurrency}
+				><span><strong>{t('fiat_currency')}</strong><small>{t('reference_currency')}</small></span
+				><select bind:value={form.fiatCurrency}
 					><option value="KRW">KRW</option><option value="USD">USD</option><option value="JPY"
 						>JPY</option
 					><option value="EUR">EUR</option></select
@@ -40,22 +41,18 @@
 		</div>
 	</section>
 	<section class="settings-section">
-		<h2>동기화</h2>
+		<h2>{t('sync')}</h2>
 		<div class="settings-panel">
 			<label class="stacked"
-				><span><Globe2 size={18} /><strong>Esplora API 주소</strong></span><input
+				><span><Globe2 size={18} /><strong>{t('esplora_api_url')}</strong></span><input
 					bind:value={form.apiUrl}
 					spellcheck="false"
 				/></label
 			><label
-				><span><strong>자동 동기화</strong><small>앱을 열 때 온라인이면 동기화</small></span><input
-					class="switch"
-					type="checkbox"
-					bind:checked={form.autoSync}
-				/></label
+				><span><strong>{t('sync_on_startup')}</strong><small>{t('auto_sync_help')}</small></span
+				><input class="switch" type="checkbox" bind:checked={form.autoSync} /></label
 			><label
-				><span><strong>Gap limit</strong><small>xpub에서 확인할 연속 미사용 주소</small></span
-				><input
+				><span><strong>{t('gap_limit')}</strong><small>{t('gap_limit_help')}</small></span><input
 					class="number-input"
 					type="number"
 					min="5"
@@ -66,27 +63,11 @@
 		</div>
 	</section>
 	<section class="settings-section">
-		<h2>개인정보와 저장소</h2>
-		<div class="privacy-cards">
-			<div>
-				<HardDrive size={20} /><span
-					><strong>온디바이스 저장</strong><small>IndexedDB에만 저장</small></span
-				>
-			</div>
-			<div>
-				<ShieldCheck size={20} /><span
-					><strong>Watch Only</strong><small>개인키·서명 기능 없음</small></span
-				>
-			</div>
-			<div>
-				<Database size={20} /><span
-					><strong>직접 선택한 서버</strong><small>동기화 시에만 연결</small></span
-				>
-			</div>
-		</div>
+		<h2>{t('privacy')}</h2>
+		<p class="footnote">{t('privacy_notice')}</p>
 	</section>
 	<button class="button primary full" onclick={save}
-		>{#if saved}<Check size={18} /> 저장됨{:else}설정 저장{/if}</button
+		>{#if saved}<Check size={18} /> {t('saved')}{:else}{t('save_settings')}{/if}</button
 	>
-	<p class="version">SatSight {appVersion} · Bitcoin only</p>
+	<p class="version">SatSight {appVersion}</p>
 </main>

@@ -27,7 +27,7 @@ describe('address pool', () => {
 		expect(addresses.filter((address) => address.branch === 0)).toHaveLength(20);
 		expect(addresses.filter((address) => address.branch === 1)).toHaveLength(20);
 		expect(addresses[0].address).toBe(deriveAddress(source, 'mainnet', 'native-segwit', 0, 0));
-		expect(addresses.at(-1)).toMatchObject({ branch: 1, index: 19, label: '거스름 #20' });
+		expect(addresses.at(-1)).toMatchObject({ branch: 1, index: 19, label: '' });
 	});
 
 	it('preserves synced metadata and addresses beyond the initial window', () => {
@@ -36,7 +36,7 @@ describe('address pool', () => {
 			index: 25,
 			id: `${wallet.id}:0:25`,
 			address: deriveAddress(source, 'mainnet', 'native-segwit', 0, 25),
-			label: '저축',
+			label: 'Savings',
 			used: true,
 			balance: 1234,
 			confirmedBalance: 1234,

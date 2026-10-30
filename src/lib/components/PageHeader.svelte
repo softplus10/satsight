@@ -1,20 +1,22 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import { ArrowLeft } from '@lucide/svelte';
 	let {
 		title,
-		eyebrow,
+		subtitle,
 		back,
 		action
-	}: { title: string; eyebrow?: string; back?: string; action?: import('svelte').Snippet } =
+	}: { title: string; subtitle?: string; back?: string; action?: import('svelte').Snippet } =
 		$props();
 </script>
 
 <header class="page-header">
 	<div class="page-title-row">
-		{#if back}<a class="icon-button back" href={back} aria-label="뒤로"><ArrowLeft size={21} /></a
+		{#if back}<a class="icon-button back" href={back} aria-label={t('back')}
+				><ArrowLeft size={21} /></a
 			>{/if}
 		<div>
-			{#if eyebrow}<p class="eyebrow">{eyebrow}</p>{/if}
+			{#if subtitle}<p class="subtitle">{subtitle}</p>{/if}
 			<h1>{title}</h1>
 		</div>
 	</div>

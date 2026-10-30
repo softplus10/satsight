@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import { ChevronRight } from '@lucide/svelte';
 	import { formatBtc, formatSats } from '$lib/domain/bitcoin';
 	import type { Wallet } from '$lib/domain/types';
@@ -10,10 +11,15 @@
 	<div class="wallet-main">
 		<div class="wallet-name">
 			<strong>{wallet.name}</strong><span class="network"
-				>{wallet.network === 'mainnet' ? 'MAINNET' : 'TESTNET'}</span
+				>{wallet.network === 'mainnet' ? t('mainnet') : t('testnet')}</span
 			>
 		</div>
-		<p>{wallet.kind === 'xpub' ? '확장 공개키' : '단일 주소'} · {wallet.txCount}건</p>
+		<p>
+			{wallet.kind === 'xpub' ? t('extended_public_key') : t('single_address')} · {t(
+				'transaction_count',
+				{ count: wallet.txCount }
+			)}
+		</p>
 	</div>
 	<div class="wallet-value">
 		<strong>{formatBtc(wallet.balance)} BTC</strong>

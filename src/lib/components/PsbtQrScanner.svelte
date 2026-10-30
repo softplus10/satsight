@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import { onMount } from 'svelte';
 	import { BrowserQRCodeReader, type IScannerControls } from '@zxing/browser';
 	import { Camera, RotateCw, X } from '@lucide/svelte';
@@ -18,12 +19,12 @@
 
 	function permissionError(cause: unknown) {
 		if (cause instanceof DOMException && cause.name === 'NotAllowedError') {
-			return '카메라 권한이 거부되었습니다. 시스템 설정에서 SatSight의 카메라 접근을 허용해 주세요.';
+			return t('camera_permission_denied');
 		}
 		if (cause instanceof DOMException && cause.name === 'NotFoundError') {
-			return '사용할 수 있는 카메라를 찾지 못했습니다.';
+			return t('no_camera_found');
 		}
-		return '카메라를 시작하지 못했습니다. 권한과 다른 앱의 카메라 사용 여부를 확인해 주세요.';
+		return t('camera_start_failed');
 	}
 
 	async function start() {
@@ -32,7 +33,7 @@
 		scanError = '';
 		starting = true;
 		if (!navigator.mediaDevices?.getUserMedia) {
-			error = '이 환경에서는 카메라 스캔을 지원하지 않습니다.';
+			error = t('camera_unsupported');
 			starting = false;
 			return;
 		}
@@ -95,52 +96,56 @@
 	<div class="scanner-modal">
 		<header>
 			<div>
-				<p>SIGNED TRANSACTION</p>
-				<h2 id="psbt-scanner-title">서명된 PSBT 스캔</h2>
+				<h2 id="psbt-scanner-title">{t('scan_signed_psbt')}</h2>
 			</div>
-			<button onclick={onClose} aria-label="스캐너 닫기"><X size={22} /></button>
+			<button onclick={onClose} aria-label={t('close_scanner')}><X size={22} /></button>
 		</header>
 		<div class="camera-preview">
 			<video bind:this={video} muted playsinline></video>
 			<div class="scan-frame"><i></i><i></i><i></i><i></i><span></span></div>
 			{#if segmentProgress}
 				<div class="segment-progress" role="status" aria-live="polite">
-					<div><strong>signed PSBT 수집 중</strong><b>{segmentProgress.percent}%</b></div>
+					<div><strong>{t('collecting_signed_psbt')}</strong><b>{segmentProgress.percent}%</b></div>
 					<div
 						class="segment-progress-track"
 						role="progressbar"
-						aria-label="signed PSBT 수집 진행률"
+						aria-label={t('signed_psbt_scan_progress')}
 						aria-valuemin="0"
 						aria-valuemax="100"
 						aria-valuenow={segmentProgress.percent}
 					>
 						<span style:width={`${segmentProgress.percent}%`}></span>
 					</div>
-					<small>{segmentProgress.received} / {segmentProgress.total} 세그먼트</small>
+					<small
+						>{t('qr_frame_progress', {
+							received: segmentProgress.received,
+							total: segmentProgress.total
+						})}</small
+					>
 				</div>
 			{/if}
 			{#if starting}
 				<div class="camera-state">
-					<RotateCw class="spinning" size={27} /><strong>카메라 권한 요청 중…</strong>
+					<RotateCw class="spinning" size={27} /><strong>{t('starting_camera')}</strong>
 				</div>
 			{/if}
 			{#if error}
 				<div class="camera-state error">
-					<Camera size={28} /><strong>카메라를 열 수 없어요</strong>
+					<Camera size={28} /><strong>{t('camera_unavailable')}</strong>
 					<p>{error}</p>
-					<button class="button secondary" onclick={start}>다시 시도</button>
+					<button class="button secondary" onclick={start}>{t('try_again')}</button>
 				</div>
 			{/if}
 			{#if scanError}
 				<div class="camera-state error">
-					<Camera size={28} /><strong>signed PSBT를 읽을 수 없어요</strong>
+					<Camera size={28} /><strong>{t('signed_psbt_scan_failed')}</strong>
 					<p>{scanError}</p>
-					<button class="button secondary" onclick={restartScan}>처음부터 다시 스캔</button>
+					<button class="button secondary" onclick={restartScan}>{t('restart_scan')}</button>
 				</div>
 			{/if}
 		</div>
 		<p class="scanner-help">
-			SeedSigner의 signed transaction animated QR을 완료될 때까지 비춰 주세요.
+			{t('signed_psbt_scan_help')}
 		</p>
 	</div>
 </div>

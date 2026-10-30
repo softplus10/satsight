@@ -1,3 +1,4 @@
+import { t } from '$lib/i18n';
 import type { SpendUtxo } from '$lib/domain/send';
 import type { AppSettings, Wallet, WatchedAddress } from '$lib/domain/types';
 import { esploraApiBase } from './esplora';
@@ -19,11 +20,12 @@ async function request(base: string, path: string, init?: RequestInit) {
 			headers: { Accept: 'application/json', ...init?.headers }
 		});
 		const body = await response.text();
-		if (!response.ok) throw new Error(body || `Esplora 서버 오류 (${response.status})`);
+		if (!response.ok)
+			throw new Error(body || t('esplora_server_error', { status: response.status }));
 		return body;
 	} catch (cause) {
 		if (cause instanceof DOMException && cause.name === 'AbortError') {
-			throw new Error('Esplora 서버 응답 시간이 초과되었습니다.');
+			throw new Error(t('esplora_timeout'));
 		}
 		throw cause;
 	} finally {
@@ -56,6 +58,7 @@ export async function fetchSpendUtxos(
 		}))
 	);
 	const confirmed = lists.flatMap(({ address, utxos }) =>
+		// Pending change is excluded until confirmed; the UI uses confirmed funds.
 		utxos.filter((utxo) => utxo.status.confirmed).map((utxo) => ({ ...utxo, address }))
 	);
 	if (wallet.scriptType !== 'legacy') return confirmed;
@@ -86,10 +89,9 @@ export async function broadcastTransaction(
 			body: rawTransaction
 		})
 	).trim();
-	if (!/^[0-9a-f]{64}$/i.test(txid))
-		throw new Error('브로드캐스트 응답의 txid가 올바르지 않습니다.');
+	if (!/^[0-9a-f]{64}$/i.test(txid)) throw new Error(t('invalid_broadcast_txid'));
 	if (txid.toLowerCase() !== expectedTxid.toLowerCase()) {
-		throw new Error('브로드캐스트된 거래의 txid가 서명된 거래와 다릅니다.');
+		throw new Error(t('broadcast_txid_mismatch'));
 	}
 	return txid;
 }

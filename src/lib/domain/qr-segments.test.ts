@@ -126,7 +126,7 @@ describe('QR segment collector', () => {
 			});
 		});
 		expect(collector.add(frames.at(-1)!)).toMatchObject({
-			error: expect.stringContaining('단일 서명'),
+			error: expect.stringContaining('single-signature'),
 			progress: { received: 4, total: 4, percent: 100 }
 		});
 	});

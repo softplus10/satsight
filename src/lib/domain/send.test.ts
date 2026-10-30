@@ -105,7 +105,9 @@ describe('PSBT send flow', () => {
 		);
 		const changed = Transaction.fromPSBT(prepared.psbt);
 		changed.updateOutput(0, { amount: 19_999n });
-		expect(() => finalizeSignedPsbt(prepared.psbt, changed.toPSBT(0))).toThrow(/원본과 다릅니다/);
+		expect(() => finalizeSignedPsbt(prepared.psbt, changed.toPSBT(0))).toThrow(
+			/differ from the original/
+		);
 	});
 
 	it.each(['nested-segwit', 'taproot'] as const)('round-trips a %s PSBT', (scriptType) => {

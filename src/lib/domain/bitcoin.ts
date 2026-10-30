@@ -1,3 +1,4 @@
+import { t, formatNumber } from '$lib/i18n';
 import { HDKey, type Versions } from '@scure/bip32';
 import { Address, NETWORK, TEST_NETWORK, p2pkh, p2sh, p2tr, p2wpkh } from '@scure/btc-signer';
 import type { BitcoinNetwork, KeyOrigin, ScriptType } from './types';
@@ -115,6 +116,8 @@ export function parseExtendedPublicKey(
 	try {
 		const node = HDKey.fromExtendedKey(value, format.versions);
 		if (node.privateKey !== null || !node.publicKey || !node.chainCode) return null;
+		// Normalize SLIP-132 prefixes to xpub/tpub while retaining the script type.
+		// Derivation and wallet identity then use a single public-key encoding.
 		const normalized = new HDKey({
 			versions: bip32Versions(format.network),
 			depth: node.depth,
@@ -145,12 +148,11 @@ export function deriveAddress(
 	branch: 0 | 1,
 	index: number
 ): string {
-	if (!Number.isSafeInteger(index) || index < 0)
-		throw new Error('주소 인덱스가 올바르지 않습니다.');
+	if (!Number.isSafeInteger(index) || index < 0) throw new Error(t('invalid_address_index'));
 	const parsed = parseExtendedPublicKey(xpub, network);
-	if (!parsed) throw new Error('확장 공개키가 올바르지 않습니다.');
+	if (!parsed) throw new Error(t('invalid_extended_public_key'));
 	const publicKey = derivePublicKey(parsed.source, network, branch, index);
-	if (!publicKey) throw new Error('공개키를 파생할 수 없습니다.');
+	if (!publicKey) throw new Error(t('public_key_derivation_failed'));
 	const net = bitcoinNetwork(network);
 
 	switch (scriptType) {
@@ -171,13 +173,14 @@ export function derivePublicKey(
 	branch: 0 | 1,
 	index: number
 ): Uint8Array {
-	if (!Number.isSafeInteger(index) || index < 0)
-		throw new Error('주소 인덱스가 올바르지 않습니다.');
+	if (!Number.isSafeInteger(index) || index < 0) throw new Error(t('invalid_address_index'));
 	const parsed = parseExtendedPublicKey(xpub, network);
-	if (!parsed) throw new Error('확장 공개키가 올바르지 않습니다.');
+	if (!parsed) throw new Error(t('invalid_extended_public_key'));
 	const root = HDKey.fromExtendedKey(parsed.source, bip32Versions(network));
+	// Account exports derive /0/index for receive and /1/index for change.
+	// Hardened ancestors must already be represented by the exported account key.
 	const publicKey = root.deriveChild(branch).deriveChild(index).publicKey;
-	if (!publicKey) throw new Error('공개키를 파생할 수 없습니다.');
+	if (!publicKey) throw new Error(t('public_key_derivation_failed'));
 	return publicKey;
 }
 
@@ -187,11 +190,10 @@ export function sourceError(
 	network: BitcoinNetwork
 ): string | null {
 	if (!cleanSource(source))
-		return kind === 'address' ? '비트코인 주소를 입력하세요.' : '확장 공개키를 입력하세요.';
-	if (kind === 'address' && !validateAddress(source, network))
-		return '선택한 네트워크와 주소가 맞지 않습니다.';
+		return kind === 'address' ? t('address_required') : t('public_key_required');
+	if (kind === 'address' && !validateAddress(source, network)) return t('address_network_mismatch');
 	if (kind === 'xpub' && !validateExtendedPublicKey(source, network))
-		return '유효한 xpub/ypub/zpub 또는 tpub/upub/vpub 공개키가 아닙니다.';
+		return t('public_key_formats');
 	return null;
 }
 
@@ -201,14 +203,14 @@ export function shortAddress(value: string, head = 8, tail = 8): string {
 }
 
 export function formatSats(sats: number): string {
-	return new Intl.NumberFormat('en-US').format(Math.round(sats));
+	return formatNumber(Math.round(sats));
 }
 
 export function formatBtc(sats: number, maximumFractionDigits = 8): string {
-	return new Intl.NumberFormat('en-US', {
+	return formatNumber(sats / 100_000_000, {
 		minimumFractionDigits: 0,
 		maximumFractionDigits
-	}).format(sats / 100_000_000);
+	});
 }
 
 export function walletDescriptor(source: string, type: ScriptType): string {

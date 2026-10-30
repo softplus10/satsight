@@ -19,12 +19,8 @@ function emptyAddress(wallet: Wallet, branch: 0 | 1, index: number): WatchedAddr
 				: deriveAddress(wallet.source, wallet.network, wallet.scriptType, branch, index),
 		branch,
 		index,
-		label:
-			wallet.kind === 'address'
-				? '입금 주소'
-				: branch === 0
-					? `주소 #${index + 1}`
-					: `거스름 #${index + 1}`,
+		// Generated labels are localized by the view, not persisted in a language.
+		label: '',
 		used: false,
 		balance: 0,
 		confirmedBalance: 0,

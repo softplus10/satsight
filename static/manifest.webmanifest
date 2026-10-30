@@ -1,7 +1,7 @@
 {
 	"name": "SatSight — Bitcoin Watch Wallet",
 	"short_name": "SatSight",
-	"description": "오프라인 우선 비트코인 Watch Only Wallet",
+	"description": "Bitcoin watch-only wallet",
 	"start_url": "/",
 	"display": "standalone",
 	"background_color": "#0b0d10",

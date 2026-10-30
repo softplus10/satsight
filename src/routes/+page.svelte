@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { ArrowUpRight, Eye, Plus, RotateCw, ShieldCheck } from '@lucide/svelte';
+	import { t } from '$lib/i18n';
+	import { ArrowUpRight, Eye, Plus, RotateCw } from '@lucide/svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import TransactionRow from '$lib/components/TransactionRow.svelte';
 	import WalletCard from '$lib/components/WalletCard.svelte';
@@ -16,23 +17,23 @@
 	}
 </script>
 
-<svelte:head><title>홈 · SatSight</title></svelte:head>
+<svelte:head><title>{t('page_title', { title: t('home') })}</title></svelte:head>
 
 <main class="page dashboard">
 	<header class="dashboard-header">
 		<div>
-			<p class="eyebrow">WATCH ONLY WALLET</p>
-			<h1>안녕하세요.</h1>
+			<h1>{t('overview')}</h1>
 		</div>
-		<button class="icon-button" class:spinning={syncing} onclick={refresh} aria-label="새로 고침"
+		<button class="icon-button" class:spinning={syncing} onclick={refresh} aria-label={t('refresh')}
 			><RotateCw size={20} /></button
 		>
 	</header>
 
 	<section class="balance-card">
 		<div class="balance-label">
-			<span>전체 잔액</span><button onclick={() => (hidden = !hidden)} aria-label="잔액 숨기기"
-				><Eye size={17} /></button
+			<span>{t('total_balance')}</span><button
+				onclick={() => (hidden = !hidden)}
+				aria-label={hidden ? t('show_balance') : t('hide_balance')}><Eye size={17} /></button
 			>
 		</div>
 		<div class="balance-value">
@@ -40,21 +41,21 @@
 		</div>
 		<p>{hidden ? '••••••' : formatSats(walletState.totalBalance)} sats</p>
 		<div class="balance-footer">
-			<span><ShieldCheck size={15} /> 키 없이 안전하게 관찰 중</span><span
-				>{walletState.wallets.length}개 지갑</span
-			>
+			<span>{t('wallet_count', { count: walletState.wallets.length })}</span>
 		</div>
 	</section>
 
 	<section class="quick-actions">
-		<a href="/wallets/new"><span><Plus size={21} /></span><strong>지갑 추가</strong></a>
-		<a href="/transactions"><span><ArrowUpRight size={21} /></span><strong>거래 내역</strong></a>
+		<a href="/wallets/new"><span><Plus size={21} /></span><strong>{t('add_wallet')}</strong></a>
+		<a href="/transactions"
+			><span><ArrowUpRight size={21} /></span><strong>{t('transactions')}</strong></a
+		>
 	</section>
 
 	<section class="section-block">
 		<div class="section-title">
-			<h2>내 지갑</h2>
-			<a href="/wallets">전체 보기</a>
+			<h2>{t('wallets')}</h2>
+			<a href="/wallets">{t('view_all')}</a>
 		</div>
 		{#if walletState.wallets.length}
 			<div class="card-list">
@@ -65,9 +66,9 @@
 			</div>
 		{:else if walletState.ready}
 			<EmptyState
-				title="첫 지갑을 연결해보세요"
-				description="주소나 확장 공개키를 추가하면 비밀키 없이 잔액을 확인할 수 있어요."
-				actionLabel="Watch Wallet 추가"
+				title={t('no_wallets')}
+				description={t('add_wallet_help')}
+				actionLabel={t('add_wallet')}
 				href="/wallets/new"
 			/>
 		{:else}
@@ -76,15 +77,15 @@
 	</section>
 	{#if walletState.wallets.some((wallet) => wallet.syncError)}
 		<p class="sync-warning">
-			일부 지갑을 동기화하지 못했습니다. 저장된 데이터는 그대로 유지됩니다.
+			{t('partial_sync_notice')}
 		</p>
 	{/if}
 
 	{#if walletState.transactions.length}
 		<section class="section-block">
 			<div class="section-title">
-				<h2>최근 거래</h2>
-				<a href="/transactions">전체 보기</a>
+				<h2>{t('recent_transactions')}</h2>
+				<a href="/transactions">{t('view_all')}</a>
 			</div>
 			<div class="panel">
 				{#each walletState.transactions.slice(0, 4) as transaction (transaction.id)}<TransactionRow

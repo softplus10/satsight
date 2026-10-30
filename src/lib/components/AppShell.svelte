@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import { onMount, type Snippet } from 'svelte';
 	import { page } from '$app/state';
 	import { House, Landmark, ListTree, Settings, WifiOff } from '@lucide/svelte';
@@ -8,12 +9,12 @@
 
 	let { children }: { children: Snippet } = $props();
 	let online = $state(true);
-	const navigation = [
-		{ href: '/', label: '홈', icon: House },
-		{ href: '/wallets', label: '지갑', icon: Landmark },
-		{ href: '/transactions', label: '거래', icon: ListTree },
-		{ href: '/settings', label: '설정', icon: Settings }
-	];
+	const navigation = $derived([
+		{ href: '/', label: t('home'), icon: House },
+		{ href: '/wallets', label: t('wallets'), icon: Landmark },
+		{ href: '/transactions', label: t('transactions'), icon: ListTree },
+		{ href: '/settings', label: t('settings'), icon: Settings }
+	]);
 
 	function active(href: string) {
 		return href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href);
@@ -40,8 +41,10 @@
 
 <div class="app-shell">
 	<aside class="sidebar">
-		<a class="brand" href="/" aria-label="SatSight 홈"><span>₿</span><strong>SatSight</strong></a>
-		<nav aria-label="주 메뉴">
+		<a class="brand" href="/" aria-label={t('satsight_home')}
+			><span>₿</span><strong>SatSight</strong></a
+		>
+		<nav aria-label={t('main_navigation')}>
 			{#each navigation as item (item.href)}
 				<a href={item.href} class:active={active(item.href)}>
 					<item.icon size={19} strokeWidth={2} />
@@ -49,20 +52,16 @@
 				</a>
 			{/each}
 		</nav>
-		<div class="local-note">
-			<div class="pulse"></div>
-			<div><strong>로컬 보관</strong><small>기기 밖으로 전송하지 않음</small></div>
-		</div>
 	</aside>
 
 	<div class="app-content">
 		{#if !online}
-			<div class="offline-banner"><WifiOff size={15} /> 오프라인 모드 · 저장된 데이터 사용 중</div>
+			<div class="offline-banner"><WifiOff size={15} /> {t('offline_notice')}</div>
 		{/if}
 		{@render children()}
 	</div>
 
-	<nav class="bottom-nav" aria-label="주 메뉴">
+	<nav class="bottom-nav" aria-label={t('main_navigation')}>
 		{#each navigation as item (item.href)}
 			<a href={item.href} class:active={active(item.href)}>
 				<item.icon size={21} strokeWidth={active(item.href) ? 2.5 : 1.8} />

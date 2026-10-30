@@ -1,3 +1,4 @@
+import { t } from '$lib/i18n';
 import { Buffer } from 'buffer';
 import { UR, URDecoder, UREncoder } from '@ngraveio/bc-ur';
 import { cborDecode, cborEncode } from '@ngraveio/bc-ur/dist/cbor.js';
@@ -33,9 +34,9 @@ function validPsbt(value: Uint8Array | undefined): value is Uint8Array {
 }
 
 export function createPsbtUrEncoder(psbt: Uint8Array, fragmentLength = 100) {
-	if (!validPsbt(psbt)) throw new Error('PSBT 데이터가 올바르지 않습니다.');
+	if (!validPsbt(psbt)) throw new Error(t('invalid_psbt_data'));
 	if (!Number.isSafeInteger(fragmentLength) || fragmentLength < 10 || fragmentLength > 500) {
-		throw new Error('UR QR 조각 크기가 올바르지 않습니다.');
+		throw new Error(t('invalid_ur_fragment_size'));
 	}
 	const cbor = cborEncode(Buffer.from(psbt));
 	return new UREncoder(new UR(cbor, 'crypto-psbt'), fragmentLength);
@@ -66,7 +67,7 @@ export class PsbtQrCollector {
 		try {
 			this.urDecoder.receivePart(value);
 		} catch {
-			return { error: '손상되었거나 지원하지 않는 signed PSBT UR 조각입니다.' };
+			return { error: t('invalid_psbt_ur_fragment') };
 		}
 		const progress = this.urProgress();
 		if (!this.urDecoder.isComplete()) return { progress };
@@ -75,9 +76,9 @@ export class PsbtQrCollector {
 			const psbt = byteBuffer(cborDecode(ur.cbor));
 			return validPsbt(psbt)
 				? { psbt: new Uint8Array(psbt), progress: { ...progress, percent: 100 } }
-				: { error: 'QR에 올바른 signed PSBT가 없습니다.', progress };
+				: { error: t('signed_psbt_required'), progress };
 		} catch {
-			return { error: 'signed PSBT UR을 해석하지 못했습니다.', progress };
+			return { error: t('psbt_ur_decode_failed'), progress };
 		}
 	}
 
@@ -91,7 +92,7 @@ export class PsbtQrCollector {
 			index > total ||
 			total > MAX_SEGMENTS
 		) {
-			return { error: 'signed PSBT 분할 QR 번호가 올바르지 않습니다.' };
+			return { error: t('invalid_signed_psbt_qr_sequence_number') };
 		}
 		this.parts ??= new Array<string | undefined>(total);
 		if (this.parts.length !== total) return { progress: this.specterProgress() };
@@ -106,9 +107,9 @@ export class PsbtQrCollector {
 			const psbt = Buffer.from(value, 'base64');
 			return validPsbt(psbt)
 				? { psbt: new Uint8Array(psbt) }
-				: { error: '지원하는 signed PSBT QR이 아닙니다.' };
+				: { error: t('unsupported_signed_psbt_qr_code') };
 		} catch {
-			return { error: 'signed PSBT QR을 해석하지 못했습니다.' };
+			return { error: t('psbt_qr_decode_failed') };
 		}
 	}
 

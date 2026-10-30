@@ -1,3 +1,4 @@
+import { t } from '$lib/i18n';
 import { HDKey, type Versions } from '@scure/bip32';
 import { hex } from '@scure/base';
 import { Transaction, p2pkh, p2sh, p2tr, p2wpkh, selectUTXO } from '@scure/btc-signer';
@@ -43,9 +44,10 @@ function payment(wallet: Wallet, publicKey: Uint8Array) {
 }
 
 function derivation(wallet: Wallet, address: Pick<WatchedAddress, 'branch' | 'index'>) {
-	if (!wallet.keyOrigin) throw new Error('서명에 필요한 키 origin 정보가 없습니다.');
+	if (!wallet.keyOrigin) throw new Error(t('key_origin_required'));
 	return {
 		fingerprint: wallet.keyOrigin.fingerprint,
+		// Signers need the full path from the master key, not just /branch/index.
 		path: [...wallet.keyOrigin.path, address.branch, address.index]
 	};
 }
@@ -54,6 +56,7 @@ function signingFields(wallet: Wallet, address: Pick<WatchedAddress, 'branch' | 
 	const publicKey = derivePublicKey(wallet.source, wallet.network, address.branch, address.index);
 	const path = derivation(wallet, address);
 	if (wallet.scriptType === 'taproot') {
+		// BIP371 uses x-only internal keys; an empty hash list denotes key-path spending.
 		const internalKey = publicKey.slice(1);
 		return {
 			tapInternalKey: internalKey,
@@ -86,12 +89,12 @@ function nextChangeAddress(wallet: Wallet, addresses: WatchedAddress[]) {
 }
 
 function assertAccountOrigin(wallet: Wallet) {
-	if (wallet.kind !== 'xpub') throw new Error('단일 주소 지갑에서는 PSBT를 만들 수 없습니다.');
-	if (!wallet.keyOrigin) throw new Error('서명에 필요한 키 origin 정보를 다시 연결해 주세요.');
+	if (wallet.kind !== 'xpub') throw new Error(t('single_address_send_unsupported'));
+	if (!wallet.keyOrigin) throw new Error(t('key_origin_reconnect_required'));
 	const versions = wallet.network === 'mainnet' ? MAINNET_VERSIONS : TESTNET_VERSIONS;
 	const account = HDKey.fromExtendedKey(wallet.source, versions);
 	if (account.depth !== wallet.keyOrigin.path.length) {
-		throw new Error('확장 공개키 깊이와 origin 경로가 일치하지 않습니다.');
+		throw new Error(t('key_origin_depth_mismatch'));
 	}
 }
 
@@ -104,17 +107,15 @@ export function createSpendPsbt(
 	feeRate: number
 ): PreparedSpend {
 	assertAccountOrigin(wallet);
-	if (!validateAddress(recipient, wallet.network))
-		throw new Error('받는 주소의 네트워크를 확인하세요.');
-	if (!Number.isSafeInteger(amount) || amount <= 0)
-		throw new Error('보낼 금액을 sats 단위로 입력하세요.');
+	if (!validateAddress(recipient, wallet.network)) throw new Error(t('recipient_network_mismatch'));
+	if (!Number.isSafeInteger(amount) || amount <= 0) throw new Error(t('invalid_send_amount'));
 	if (!Number.isFinite(feeRate) || feeRate < 1 || feeRate > 10_000) {
-		throw new Error('수수료율은 1~10,000 sat/vB 범위여야 합니다.');
+		throw new Error(t('invalid_fee_rate'));
 	}
 
 	const candidates = utxos.map((utxo) => {
 		if (!Number.isSafeInteger(utxo.value) || utxo.value <= 0)
-			throw new Error('UTXO 금액이 올바르지 않습니다.');
+			throw new Error(t('invalid_utxo_amount'));
 		const publicKey = derivePublicKey(
 			wallet.source,
 			wallet.network,
@@ -122,8 +123,9 @@ export function createSpendPsbt(
 			utxo.address.index
 		);
 		const expected = payment(wallet, publicKey);
+		// Re-derive ownership locally instead of trusting an address from the API.
 		if (expected.address !== utxo.address.address) {
-			throw new Error('UTXO 주소가 지갑 파생 경로와 일치하지 않습니다.');
+			throw new Error(t('utxo_derivation_mismatch'));
 		}
 		const fields = signingFields(wallet, utxo.address);
 		const common = {
@@ -133,7 +135,8 @@ export function createSpendPsbt(
 			...fields
 		};
 		if (wallet.scriptType === 'legacy') {
-			if (!utxo.nonWitnessUtxo) throw new Error('Legacy UTXO의 이전 거래 정보가 없습니다.');
+			// Legacy inputs need the entire previous transaction in the PSBT.
+			if (!utxo.nonWitnessUtxo) throw new Error(t('legacy_previous_transaction_required'));
 			return { ...common, nonWitnessUtxo: hex.decode(utxo.nonWitnessUtxo) };
 		}
 		return {
@@ -155,10 +158,12 @@ export function createSpendPsbt(
 			createTx: true
 		}
 	);
-	if (!selected?.tx) throw new Error('수수료를 포함한 사용 가능한 잔액이 부족합니다.');
+	if (!selected?.tx) throw new Error(t('insufficient_funds'));
 
 	let changeAmount = 0;
 	if (selected.change) {
+		// With BIP69 sorting disabled, the selector appends change last. Its origin
+		// metadata lets the external signer identify it as belonging to this wallet.
 		const outputIndex = selected.outputs.length - 1;
 		selected.tx.updateOutput(outputIndex, signingFields(wallet, change));
 		changeAmount = Number(selected.outputs[outputIndex].amount);
@@ -166,7 +171,7 @@ export function createSpendPsbt(
 	const inputTotal = selected.inputs.reduce((sum, input) => {
 		const txid = typeof input.txid === 'string' ? input.txid : hex.encode(input.txid!);
 		const source = utxos.find((utxo) => utxo.txid === txid && utxo.vout === input.index);
-		if (!source) throw new Error('선택된 UTXO 정보를 찾지 못했습니다.');
+		if (!source) throw new Error(t('selected_utxo_not_found'));
 		return sum + source.value;
 	}, 0);
 
@@ -189,14 +194,16 @@ export function finalizeSignedPsbt(
 ): FinalizedSpend {
 	const original = Transaction.fromPSBT(originalPsbt);
 	const signed = Transaction.fromPSBT(signedPsbt);
+	// Bind the returned signatures to the exact transaction the user reviewed.
+	// Compare before merging so an imported PSBT cannot replace inputs or outputs.
 	if (hex.encode(original.unsignedTx) !== hex.encode(signed.unsignedTx)) {
-		throw new Error('서명된 PSBT의 받는 주소, 금액 또는 입력이 원본과 다릅니다.');
+		throw new Error(t('signed_psbt_changed'));
 	}
 	try {
 		original.combine(signed);
 		original.finalize();
 	} catch {
-		throw new Error('signed PSBT의 서명이 부족하거나 원본 PSBT 정보와 충돌합니다.');
+		throw new Error(t('psbt_finalization_failed'));
 	}
 	return { hex: original.hex, txid: original.id, fee: Number(original.fee) };
 }

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import { onMount } from 'svelte';
 	import QRCode from 'qrcode';
 	import { createPsbtUrEncoder } from '$lib/domain/psbt-qr';
@@ -30,7 +31,7 @@
 				frame += 1;
 				current = ((frame - 1) % total) + 1;
 			} catch {
-				error = 'PSBT QR 이미지를 만들지 못했습니다.';
+				error = t('qr_generation_failed');
 			} finally {
 				rendering = false;
 			}
@@ -46,10 +47,8 @@
 </script>
 
 <div class="animated-qr" aria-live="off">
-	{#if image}<img src={image} alt="SeedSigner가 스캔할 animated PSBT QR" />{:else}<div
-			class="qr-placeholder"
-		>
-			QR 준비 중…
+	{#if image}<img src={image} alt={t('psbt_qr_alt')} />{:else}<div class="qr-placeholder">
+			{t('preparing_qr')}
 		</div>{/if}
-	<p>{error || `Animated UR · ${current} / ${total}`}</p>
+	<p>{error || t('animated_ur_progress', { current, total })}</p>
 </div>

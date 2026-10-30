@@ -1,79 +1,50 @@
-# CI 및 통합 배포
+# CI and releases
 
-## 필요한 CI 작업
+## Workflow stages
 
-1. PR 및 master 변경: npm ci 이후 Svelte/TypeScript 검사, lint, Vitest만 실행.
-2. 릴리스 태그: 태그 형식 및 master 포함 여부 검증, 타입 검사, lint, Vitest.
-3. 릴리스 태그: Windows/Linux amd64 Tauri 프로덕션 빌드.
-4. 릴리스 태그: FreeBSD/OpenBSD amd64 VM 네이티브 빌드 및 tar.gz 패키징.
-5. 릴리스 태그: Capacitor sync 및 서명 APK/AAB 빌드.
-6. 모든 산출물 누락 검사 및 SHA256SUMS 생성 후 단일 GitHub Release 공개.
+1. Pull requests and pushes to `main`: install dependencies, run Svelte/TypeScript checks, lint, and Vitest.
+2. Release tags: validate the version and commit ancestry, then run the shared checks.
+3. Build the versioned web frontend once and share it with native jobs.
+4. Build Windows/Linux amd64 binaries, FreeBSD/OpenBSD amd64 binaries in VMs, and signed Android APK/AAB artifacts.
+5. Verify every artifact, generate `SHA256SUMS`, and publish one GitHub Release.
 
-PR에서는 웹 빌드와 네이티브 플랫폼 빌드를 실행하지 않습니다.
-플랫폼별 빌드는 릴리스 태그에서 한 번씩만 실행합니다.
-태그 버전을 주입한 웹 빌드는 한 번만 수행하고 frontend 아티팩트로 모든 플랫폼에 공유합니다.
+Pull request CI does not build the web frontend or native packages. Native builds run on release tags.
 
-## 배포 트리거
+## Release tags
 
-기본 배포 브랜치는 master입니다. master에 포함된 커밋에
-vX.Y.Z 또는 X.Y.Z 태그를 push하면 배포합니다. 브랜치 push만으로는
-릴리스를 만들지 않습니다. 태그는 브랜치 정보를 포함하지 않으므로
-워크플로에서 master에 포함된 커밋인지 별도로 검사합니다.
+The release validator currently requires the tagged commit to be included in `master`, while ordinary push CI targets `main`. Align the release ancestry rule with the repository's intended release branch before publishing from a different branch.
 
-```sh
-git switch master
-git pull --ff-only
-git tag v0.1.1
-git push origin v0.1.1
-```
+Push a tag in the form `vX.Y.Z` or `X.Y.Z` to trigger a release. A branch push alone does not create one. Tags must contain three integers without leading zeros, prerelease identifiers, or build metadata. The alternate spelling of an existing version is rejected: `v0.1.1` and `0.1.1` cannot both represent releases.
 
-같은 버전에 v0.1.1과 0.1.1이 모두 존재하면 배포를 거부합니다.
-서로 다른 태그의 실행은 병렬로 진행하며 원격 저장소의 반대 표기 태그를 검사합니다.
-모든 플랫폼의 네이티브 버전과 앱 화면 버전은 태그 버전으로 맞춥니다.
-태그 형식은 정수 3개이며 선행 0, prerelease, build metadata는 허용하지 않습니다.
-Android versionCode는 major * 1000000 + minor * 1000 + patch입니다.
-major는 2099 이하, minor/patch는 999 이하이며 0.0.0은 허용하지 않습니다.
-버전은 기존 공개 정식 릴리스보다 커야 하며, 빌드 전과 게시 직전에 검사합니다.
-같거나 낮은 버전은 배포를 거부합니다. draft와 prerelease는 비교에서 제외합니다.
-동시 배포의 완료 순서가 달라져도 최신 릴리스는 GitHub의 make_latest=legacy 정책으로 결정합니다.
+All native versions and the displayed app version come from the tag. Android `versionCode` is `major * 1000000 + minor * 1000 + patch`. The major component must be at most 2099; minor and patch must be at most 999. Version `0.0.0` is not allowed.
 
-## Android 서명 설정
+A release must be newer than existing published stable releases. This is checked before building and again before publishing. Drafts and prereleases are excluded from the comparison. GitHub's `make_latest=legacy` policy determines the latest release if concurrent jobs finish out of order.
 
-Settings → Secrets and variables → Actions에 다음 repository secrets를 등록하세요.
+## Android signing
 
-| Secret                    | 내용                                   |
-| ------------------------- | -------------------------------------- |
-| ANDROID_KEYSTORE_BASE64   | 배포용 JKS 파일을 base64로 인코딩한 값 |
-| ANDROID_KEYSTORE_PASSWORD | JKS 비밀번호                           |
-| ANDROID_KEY_ALIAS         | 서명 키 alias                          |
-| ANDROID_KEY_PASSWORD      | 키 비밀번호                            |
+Configure these repository secrets under Settings → Secrets and variables → Actions:
 
-동일한 키를 계속 사용하고 별도로 백업하세요. 키가 없으면 배포는 실패하며
-debug 키로 대체하지 않습니다. PR CI에는 키가 필요 없습니다.
-APK와 AAB를 함께 생성하지만 Google Play 업로드는 수행하지 않습니다.
+| Secret                      | Value                           |
+| --------------------------- | ------------------------------- |
+| `ANDROID_KEYSTORE_BASE64`   | Base64-encoded release JKS file |
+| `ANDROID_KEYSTORE_PASSWORD` | Keystore password               |
+| `ANDROID_KEY_ALIAS`         | Signing key alias               |
+| `ANDROID_KEY_PASSWORD`      | Signing key password            |
 
-## 배포 파일
+Reuse and back up the same signing key. Missing signing secrets fail the release; the workflow does not substitute a debug key. Pull request CI does not require these secrets. Both APK and AAB files are generated, but the workflow does not upload to Google Play.
 
-- satsight-X.Y.Z-windows-amd64.zip: 실행 파일. WebView2 Runtime 필요.
-- satsight-X.Y.Z-linux-amd64.tar.gz: Ubuntu 24.04에서 빌드한 실행 파일.
-- satsight-X.Y.Z-freebsd-amd64.tar.gz: FreeBSD 14.3 VM에서 빌드한 실행 파일.
-- satsight-X.Y.Z-openbsd-amd64.tar.gz: OpenBSD 8.0 VM에서 빌드한 실행 파일.
-- satsight-X.Y.Z-android.apk: 서명된 설치용 APK.
-- satsight-X.Y.Z-android.aab: 서명된 앱 번들.
-- SHA256SUMS: 모든 파일의 SHA-256.
+## Artifacts
 
-Unix tar.gz는 시스템 라이브러리를 포함하지 않습니다. Linux에는 GTK3,
-WebKitGTK 4.1, appindicator 관련 런타임이 필요합니다. BSD에도 해당 OS의
-GTK3/WebKitGTK 4.1 및 연결된 라이브러리가 필요하며, 빌드 OS와 호환되는
-버전에서 사용해야 합니다. BSD 압축 파일에는 linked-libraries.txt도 포함합니다.
+- `satsight-X.Y.Z-windows-amd64.zip`: executable; requires WebView2 Runtime.
+- `satsight-X.Y.Z-linux-amd64.tar.gz`: executable built on Ubuntu 24.04.
+- `satsight-X.Y.Z-freebsd-amd64.tar.gz`: executable built in a FreeBSD 14.3 VM.
+- `satsight-X.Y.Z-openbsd-amd64.tar.gz`: executable built in an OpenBSD 8.0 VM.
+- `satsight-X.Y.Z-android.apk`: signed installable APK.
+- `satsight-X.Y.Z-android.aab`: signed Android app bundle.
+- `SHA256SUMS`: SHA-256 checksums for all release files.
 
-현재 Tauri 2.x에는 FreeBSD/OpenBSD 조건부 코드가 있습니다. BSD에서는 npm
-Tauri CLI 및 설치 패키지 번들러를 사용하지 않고, Linux에서 생성한 정적
-프런트엔드를 VM에 전달한 다음 cargo build와 tauri/custom-protocol로
-프로덕션 앱을 빌드합니다. BSD 지원은 실제 VM CI 결과로 검증해야 하며,
-컴파일 성공이 GUI/카메라/외부 브라우저 기능의 실행 검증을 대신하지 않습니다.
+Unix archives do not bundle system libraries. Linux requires GTK3, WebKitGTK 4.1, and appindicator runtimes. BSD builds require compatible GTK3/WebKitGTK 4.1 and linked system libraries. BSD archives also include `linked-libraries.txt`.
 
-한 플랫폼이라도 실패하면 공개 릴리스는 생성하지 않습니다. 업로드 도중
-실패한 경우 draft로 남으며 동일한 실행을 재시도할 수 있습니다. 이미 공개된
-릴리스는 덮어쓰지 않습니다. 배포에는 기본 GITHUB_TOKEN의 contents: write만
-사용하고 별도 PAT는 필요하지 않습니다.
+BSD builds use `cargo build` with `tauri/custom-protocol`, passing the Linux-built static frontend into the VM. They do not use the npm Tauri CLI or installer bundler. Validate BSD support against actual VM CI results. Compilation alone does not verify the GUI, camera, or external browser behavior.
+
+A failure on any required platform prevents a public release. An interrupted upload leaves a draft that can be retried. Published releases are not overwritten. Publishing uses the default `GITHUB_TOKEN` with `contents: write`; no separate personal access token is required.

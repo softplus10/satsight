@@ -31,7 +31,7 @@ const address: WatchedAddress = {
 	address: 'bc1qexample',
 	branch: 0,
 	index: 0,
-	label: '주소 #1',
+	label: 'Receive #1',
 	used: true,
 	balance: 20_000,
 	confirmedBalance: 20_000,

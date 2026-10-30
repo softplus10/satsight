@@ -1,3 +1,4 @@
+import { t } from '$lib/i18n';
 import { browser } from '$app/environment';
 import { buildAddressPool } from '$lib/domain/address-pool';
 import { parseExtendedPublicKey, parseWalletQr } from '$lib/domain/bitcoin';
@@ -77,15 +78,18 @@ class WalletState {
 	}
 
 	async connectKeyOrigin(id: string, exportedKey: string) {
+		// Attach signer metadata only when the scanned export identifies the same
+		// account, network, and script type as the existing watch-only wallet.
 		const wallet = this.wallets.find((item) => item.id === id);
-		if (!wallet || wallet.kind !== 'xpub') throw new Error('확장 공개키 지갑을 찾을 수 없습니다.');
+		if (!wallet || wallet.kind !== 'xpub')
+			throw new Error(t('extended_public_key_wallet_not_found'));
 		const scanned = parseWalletQr(exportedKey);
 		const parsed = scanned?.kind === 'xpub' ? scanned : undefined;
-		if (!parsed?.keyOrigin) throw new Error('[fingerprint/path]가 포함된 공개키를 가져와 주세요.');
-		if (parsed.network !== wallet.network) throw new Error('현재 지갑과 네트워크가 다릅니다.');
-		if (parsed.source !== wallet.source) throw new Error('현재 지갑과 다른 확장 공개키입니다.');
+		if (!parsed?.keyOrigin) throw new Error(t('key_origin_import_required'));
+		if (parsed.network !== wallet.network) throw new Error(t('wallet_network_mismatch'));
+		if (parsed.source !== wallet.source) throw new Error(t('wallet_public_key_mismatch'));
 		if (parsed.scriptType !== wallet.scriptType) {
-			throw new Error('현재 지갑과 주소 형식이 다른 공개키입니다.');
+			throw new Error(t('wallet_script_type_mismatch'));
 		}
 		const updated = {
 			...wallet,
@@ -103,6 +107,7 @@ class WalletState {
 		this.syncingIds = [...this.syncingIds, id];
 		try {
 			const addresses = await repository.listAddresses(id);
+			// Finish network discovery before updating the last successful snapshot.
 			const result = await syncWatchWallet(wallet, addresses, this.settings);
 			await Promise.all([
 				repository.putWallet(result.wallet),
@@ -114,7 +119,7 @@ class WalletState {
 		} catch (cause) {
 			const failed = {
 				...wallet,
-				syncError: cause instanceof Error ? cause.message : '동기화하지 못했습니다.'
+				syncError: cause instanceof Error ? cause.message : t('sync_failed')
 			};
 			await repository.putWallet(failed);
 			this.wallets = this.wallets.map((item) => (item.id === id ? failed : item));

@@ -1,54 +1,44 @@
 # SatSight
 
-SvelteKit과 Capacitor로 만든 비트코인 전용 Watch Only Wallet입니다. 개인키나 시드 문구를 받지 않고, 비트코인 주소 또는 계정 단위 `xpub`/`tpub`만 기기 로컬에 저장합니다.
+A Bitcoin watch-only wallet built with SvelteKit, Capacitor, and Tauri. SatSight stores addresses and account public keys locally. It does not accept private keys or seed phrases. Transactions are prepared as PSBTs and signed on an external device.
 
-## 주요 기능
+## Features
 
-- SvelteKit `ssr = false` 기반 완전한 CSR 앱
-- IndexedDB 기반 오프라인 우선 저장소
-- Mainnet/Testnet 단일 주소 및 `xpub`/`ypub`/`zpub`, `tpub`/`upub`/`vpub` 지갑
-- 카메라 권한 기반 QR 가져오기(BIP21, 주소, `[origin]xpub`, descriptor, Specter 분할 QR, SeedSigner animated UR)
-- Legacy, Nested SegWit, Native SegWit, Taproot 주소 파생
-- Esplora 호환 API를 통한 수동/선택적 자동 동기화
-- SeedSigner animated QR을 이용한 PSBT 생성·외부 서명·검증·브로드캐스트
-- PWA 서비스 워커 앱 셸 캐시
-- Capacitor 8 Android/iOS 프로젝트와 Tauri 2 데스크톱 프로젝트
-- 비밀키 입력이나 기기 내 서명 기능이 없는 외부 서명 방식
+- Mainnet and Testnet addresses and account public keys: `xpub`, `ypub`, `zpub`, `tpub`, `upub`, and `vpub`.
+- Legacy, nested SegWit, native SegWit, and Taproot address derivation.
+- QR imports for addresses, BIP21, key origins, supported single-key descriptors, Specter fragments, and SeedSigner animated UR.
+- Manual or startup sync through an Esplora-compatible server.
+- PSBT creation, external signing via animated QR, original-transaction comparison, and broadcasting.
+- IndexedDB storage and a service worker for offline access to saved data.
+- Static web/PWA, Capacitor Android/iOS, and Tauri desktop projects.
+- English UI with typed translation keys, interpolation, plurals, and locale-aware formatting. See [Internationalization](docs/I18N.md).
 
-## Route
+## Routes
 
-| Route                     | 역할                                            |
-| ------------------------- | ----------------------------------------------- |
-| `/`                       | 전체 잔액, 지갑, 최근 거래 대시보드             |
-| `/wallets`                | 저장된 Watch Wallet 목록                        |
-| `/wallets/new`            | 주소 또는 확장 공개키 가져오기                  |
-| `/wallets/[id]`           | 지갑 잔액, 공개 정보, 동기화, 최근 거래         |
-| `/wallets/[id]/addresses` | 외부/거스름 주소 목록                           |
-| `/wallets/[id]/send`      | PSBT 생성, SeedSigner 서명, 브로드캐스트        |
-| `/transactions`           | 전체 거래와 방향 필터                           |
-| `/transactions/[id]`      | 거래 상세 및 탐색기 링크                        |
-| `/settings`               | 표시 단위, Esplora 서버, 자동 동기화, gap limit |
+| Route                     | Purpose                                                          |
+| ------------------------- | ---------------------------------------------------------------- |
+| `/`                       | Balance overview, wallets, and recent transactions               |
+| `/wallets`                | Wallet list                                                      |
+| `/wallets/new`            | Import an address or account public key                          |
+| `/wallets/[id]`           | Wallet balance, public information, and sync                     |
+| `/wallets/[id]/addresses` | Receive and change addresses                                     |
+| `/wallets/[id]/send`      | Prepare, externally sign, and broadcast a PSBT                   |
+| `/transactions`           | Transactions and direction filters                               |
+| `/transactions/[id]`      | Transaction details and explorer link                            |
+| `/settings`               | Display preferences, Esplora server, startup sync, and gap limit |
 
-동적 route는 정적 어댑터의 `index.html` fallback을 통해 CSR에서 해석됩니다.
+The app uses client-side rendering (`ssr = false`). The static adapter's `index.html` fallback handles dynamic routes.
 
-## 오프라인 동작
+## Development
 
-첫 웹 방문 또는 설치 시 서비스 워커가 앱 셸과 route chunk를 캐시합니다. Capacitor 앱은 동일한 정적 빌드를 앱 내부에 번들합니다. 지갑, 파생 주소, 마지막 잔액과 거래는 IndexedDB에서 읽으므로 인터넷이 없어도 앱 탐색과 조회가 가능합니다.
-
-네트워크가 필요한 작업은 Esplora 동기화뿐입니다. 동기화 실패 시 기존 로컬 스냅샷은 변경하지 않습니다. 기본 서버는 Blockstream Esplora이며 설정에서 직접 운영하는 Esplora URL로 변경할 수 있습니다.
-
-> 확장 공개키와 주소도 금융 프라이버시 정보입니다. 동기화 서버는 조회한 주소들을 볼 수 있습니다. 높은 프라이버시가 필요하면 자신의 Esplora 서버를 사용하세요.
-
-## 개발
-
-Node.js 24 이상을 권장합니다. Android 네이티브 빌드에는 JDK 21 또는 24와 Android SDK가 필요합니다.
+Use Node.js 24 or later. Android builds also require JDK 21 or 24 and the Android SDK.
 
 ```sh
-npm install
+npm ci
 npm run dev
 ```
 
-검증 명령:
+Run the project checks:
 
 ```sh
 npm test
@@ -57,52 +47,54 @@ npm run lint
 npm run build
 ```
 
-## Cloudflare Workers
+Domain code lives in `src/lib/domain/`, network clients in `src/lib/sync/`, IndexedDB access in `src/lib/db/`, and shared Svelte state in `src/lib/state/`. User-facing messages live in `src/lib/i18n/en.ts`.
 
-`build/`의 CSR 정적 파일만 Workers Static Assets로 배포합니다. 별도의 Worker 서버 코드는 사용하지 않으며, 동적 route는 SPA fallback으로 `index.html`을 반환합니다.
+## Offline access and privacy
+
+The service worker caches the web app shell and route chunks. Capacitor bundles the same static frontend in the native app. Saved wallets, addresses, balances, and transactions can be viewed offline. Sync, fee estimates, UTXO retrieval, and broadcasting require a network connection.
+
+The default server is Blockstream Esplora. You can configure your own Esplora API URL in Settings. **Your sync server can see the addresses you query.** Public keys and addresses are sensitive financial information even though they cannot sign transactions.
+
+## Web hosting
+
+The Cloudflare configuration serves `build/` as Workers Static Assets with an SPA fallback. There is no application server Worker.
 
 ```sh
 npm run cf:dev
 npm run deploy
 ```
 
-## Capacitor
+## Mobile apps
 
-웹 빌드를 네이티브 프로젝트에 반영합니다.
+Build the frontend and sync native projects:
 
 ```sh
 npm run cap:sync
 ```
 
-Android Studio 또는 Xcode에서 여는 명령:
+Open Android Studio or Xcode:
 
 ```sh
 npm run cap:android
 npm run cap:ios
 ```
 
-Android 프로젝트는 `android/`, iOS 프로젝트는 `ios/`에 있습니다. Android 앱 식별자는 `dev.hskim.satsight`입니다.
+Projects are in `android/` and `ios/`. The Android application ID is `dev.hskim.satsight`.
 
-## Tauri 데스크톱
-
-개발 창을 실행합니다.
+## Desktop apps
 
 ```sh
 npm run tauri:dev
-```
-
-현재 운영체제용 설치 패키지를 생성합니다.
-
-```sh
 npm run tauri:build
 ```
 
-Tauri 프로젝트는 `src-tauri/`에 있으며 Windows, macOS, Linux 번들 설정을 포함합니다. 외부 블록 탐색기 링크는 최소 권한의 opener 플러그인으로 시스템 브라우저에서 엽니다. 플랫폼별 패키징에는 해당 운영체제의 Tauri 시스템 의존성이 필요합니다.
+The Tauri project is in `src-tauri/`. Native builds require the host platform's Tauri dependencies. Explorer links open in the system browser through the opener plugin. Release packaging is described in [Release process](docs/RELEASE.md).
 
-## 보안 경계
+## Security boundaries
 
-- `xprv`, WIF 개인키, 시드 문구를 지원하지 않습니다.
-- 트랜잭션은 PSBT로 생성되며 개인키 서명은 SeedSigner 같은 외부 장치에서만 수행합니다.
-- signed PSBT의 unsigned transaction이 원본과 같은지 확인한 후에만 브로드캐스트합니다.
-- 지갑 데이터는 별도 클라우드 계정 없이 현재 기기의 IndexedDB에만 저장됩니다.
-- 이 앱은 잔액을 관찰하는 도구이며 백업 수단이 아닙니다. 원본 지갑의 시드 백업은 별도로 안전하게 보관해야 합니다.
+- No `xprv`, WIF private keys, or seed phrases are supported.
+- Signing happens on an external device such as SeedSigner.
+- An imported signed PSBT must contain the same unsigned transaction as the original before it can be finalized and broadcast.
+- Always verify the recipient, amount, and fee on the signing device.
+- Wallet records are stored in this device's IndexedDB without a SatSight cloud account.
+- SatSight is not a seed backup. Keep the original wallet's recovery material separately.
