@@ -213,6 +213,9 @@ code {
 }
 .balance-label button {
 	display: grid;
+	min-width: 44px;
+	min-height: 44px;
+	place-items: center;
 	padding: 0;
 	background: none;
 	color: #777d86;
@@ -310,8 +313,13 @@ code {
 .wallet-card {
 	display: grid;
 	grid-template-columns: auto minmax(0, 1fr) auto auto;
+	grid-template-areas:
+		'icon name name chevron'
+		'icon type value chevron'
+		'icon count value chevron';
 	align-items: center;
-	gap: 12px;
+	column-gap: 12px;
+	row-gap: 4px;
 	min-height: 76px;
 	padding: 14px;
 	border: 1px solid var(--line);
@@ -325,6 +333,7 @@ code {
 	transform: scale(0.99);
 }
 .wallet-icon {
+	grid-area: icon;
 	display: grid;
 	width: 42px;
 	height: 42px;
@@ -340,9 +349,10 @@ code {
 	box-shadow: 0 0 0 3px color-mix(in srgb, var(--wallet-color) 13%, transparent);
 }
 .wallet-main {
-	min-width: 0;
+	display: contents;
 }
 .wallet-name {
+	grid-area: name;
 	display: flex;
 	min-width: 0;
 	align-items: center;
@@ -369,6 +379,7 @@ code {
 	font-size: 10px;
 }
 .wallet-value {
+	grid-area: value;
 	display: flex;
 	align-items: flex-end;
 	flex-direction: column;
@@ -382,6 +393,7 @@ code {
 	font-size: 9px;
 }
 .chevron {
+	grid-area: chevron;
 	color: #4f555e;
 }
 .panel,
@@ -692,7 +704,7 @@ code {
 	z-index: 10;
 	top: 46px;
 	right: 0;
-	min-width: 140px;
+	min-width: 180px;
 	padding: 5px;
 	border: 1px solid var(--line);
 	border-radius: 12px;
@@ -707,8 +719,9 @@ code {
 	padding: 10px;
 	border-radius: 8px;
 	background: none;
-	color: #f28c87;
-	font-size: 10px;
+	color: #d9dde3;
+	font-size: 12px;
+	min-height: 44px;
 }
 .wallet-hero {
 	position: relative;
@@ -741,7 +754,7 @@ code {
 	font-size: 9px;
 }
 .hero-balance {
-	margin-top: 22px;
+	margin-top: 0;
 }
 .hero-balance strong {
 	font-size: clamp(27px, 8vw, 39px);
@@ -824,7 +837,6 @@ code {
 .detail-panel strong,
 .detail-panel code {
 	font-size: 10px;
-	text-transform: capitalize;
 }
 .detail-panel code {
 	color: #b6bac1;
@@ -1528,4 +1540,34 @@ code {
 	justify-content: center;
 	gap: 10px;
 	min-height: 180px;
+}
+
+.wallet-main .wallet-type {
+	grid-area: type;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2px 8px;
+	margin: 0;
+	font-size: 12px;
+	line-height: 1.4;
+	color: #a4abb5;
+}
+.wallet-type span {
+	white-space: nowrap;
+}
+.wallet-main .wallet-transaction-count {
+	grid-area: count;
+	margin: 0;
+	font-size: 11px;
+	color: #9299a5;
+}
+.context-menu button.danger {
+	color: #f28c87;
+}
+.context-menu button:hover {
+	background: var(--surface-raised);
+}
+.context-menu button:focus-visible {
+	outline: 2px solid var(--orange);
+	outline-offset: -2px;
 }

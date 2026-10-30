@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t, localizedHref } from '$lib/i18n';
-	import { ArrowUpRight, Eye, Plus, RotateCw } from '@lucide/svelte';
+	import { ArrowUpRight, Eye, EyeOff, Plus, RotateCw } from '@lucide/svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import TransactionRow from '$lib/components/TransactionRow.svelte';
 	import WalletCard from '$lib/components/WalletCard.svelte';
@@ -33,7 +33,9 @@
 		<div class="balance-label">
 			<span>{t('total_balance')}</span><button
 				onclick={() => (hidden = !hidden)}
-				aria-label={hidden ? t('show_balance') : t('hide_balance')}><Eye size={17} /></button
+				aria-label={hidden ? t('show_balance') : t('hide_balance')}
+				aria-pressed={hidden}
+				>{#if hidden}<EyeOff size={19} />{:else}<Eye size={19} />{/if}</button
 			>
 		</div>
 		<div class="balance-value">
@@ -63,6 +65,7 @@
 			<div class="card-list">
 				{#each walletState.wallets.slice(0, 3) as wallet (wallet.id)}<WalletCard
 						{wallet}
+						hideAmounts={hidden}
 						compact
 					/>{/each}
 			</div>
@@ -92,6 +95,7 @@
 			<div class="panel">
 				{#each walletState.transactions.slice(0, 4) as transaction (transaction.id)}<TransactionRow
 						{transaction}
+						hideAmounts={hidden}
 					/>{/each}
 			</div>
 		</section>

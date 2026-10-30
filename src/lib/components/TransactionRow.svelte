@@ -3,7 +3,10 @@
 	import { ArrowDownLeft, ArrowUpRight, RefreshCw } from '@lucide/svelte';
 	import { formatSats, shortAddress } from '$lib/domain/bitcoin';
 	import type { WalletTransaction } from '$lib/domain/types';
-	let { transaction }: { transaction: WalletTransaction } = $props();
+	let {
+		transaction,
+		hideAmounts = false
+	}: { transaction: WalletTransaction; hideAmounts?: boolean } = $props();
 	const label = $derived(
 		transaction.direction === 'received'
 			? t('received')
@@ -38,13 +41,13 @@
 		>
 	</div>
 	<div class:positive={transaction.direction === 'received'} class="tx-value">
-		<strong
-			>{transaction.direction === 'received'
-				? '+'
-				: transaction.direction === 'sent'
-					? '−'
-					: ''}{formatSats(Math.abs(transaction.value))}</strong
-		>
+		{#if hideAmounts}<strong>••••••</strong>{:else}<strong
+				>{transaction.direction === 'received'
+					? '+'
+					: transaction.direction === 'sent'
+						? '−'
+						: ''}{formatSats(Math.abs(transaction.value))}</strong
+			>{/if}
 		<span>sats · {transaction.status === 'confirmed' ? t('confirmed') : t('pending')}</span>
 	</div>
 </a>

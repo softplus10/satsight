@@ -255,5 +255,13 @@ export const en_US = {
 	loading_addresses: 'Loading addresses…',
 	address_page_failed: 'Could not load more addresses.',
 	show_address_qr: 'Show address QR',
-	load_more: 'Load more'
+	load_more: 'Load more',
+	single_sig: 'Single sig',
+	signature_policy: 'Signature policy',
+	wallet_information: 'Wallet information',
+	copy_xpub: 'Copy xpub',
+	export_wallet: 'Export wallet',
+	wallet_exported: 'Public wallet configuration exported.',
+	wallet_export_failed: 'Could not export the wallet.',
+	public_info_copy_failed: 'Could not copy the public key or address.'
 } as const;

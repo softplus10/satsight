@@ -10,6 +10,8 @@ A Bitcoin watch-only wallet built with SvelteKit, Capacitor, and Tauri. SatSight
 - Manual or startup sync through an Esplora-compatible server.
 - Receive with a server-verified unused address and QR code; view any address as a QR popup.
 - Receive/change address lists load additional derived addresses as you scroll.
+- Wallet summaries show signing policy and address format, with transaction counts on a separate line. Address-only imports leave signing policy unknown.
+- The wallet menu copies the public key/address or exports public JSON configuration, including key origin and receive/change descriptors for account wallets. Exports exclude device IDs, balances, and transaction history.
 - PSBT creation, external signing via animated QR, original-transaction comparison, and broadcasting.
 - IndexedDB storage and a service worker for offline access to saved data.
 - Static web/PWA, Capacitor Android/iOS, and Tauri desktop projects.

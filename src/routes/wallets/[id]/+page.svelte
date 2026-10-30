@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { t, localizedHref } from '$lib/i18n';
-	import { scriptTypeLabel } from '$lib/i18n/address-label';
+	import { walletSignatureLabel, walletScriptLabel } from '$lib/i18n/wallet-label';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import {
 		ArrowDownLeft,
-		Check,
 		Copy,
+		Download,
 		Ellipsis,
 		ExternalLink,
 		QrCode,
@@ -19,15 +19,18 @@
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import TransactionRow from '$lib/components/TransactionRow.svelte';
 	import AddressQrDialog from '$lib/components/AddressQrDialog.svelte';
-	import { formatBtc, formatSats, shortAddress, walletDescriptor } from '$lib/domain/bitcoin';
+	import { formatBtc, formatSats } from '$lib/domain/bitcoin';
+	import { walletExport } from '$lib/domain/wallet-export';
+	import { downloadJson } from '$lib/platform/download';
 	import type { Wallet, WatchedAddress } from '$lib/domain/types';
 	import { walletState } from '$lib/state/wallets.svelte';
 	import { openExternal } from '$lib/platform/external';
 
 	let wallet = $state<Wallet>();
 	let addresses = $state<WatchedAddress[]>([]);
-	let copied = $state(false);
 	let menu = $state(false);
+	let actionMessage = $state('');
+	let actionFailed = $state(false);
 	let syncMessage = $state('');
 	let receiveOpen = $state(false);
 	let receiveLoading = $state(false);
@@ -46,9 +49,28 @@
 
 	async function copySource() {
 		if (!wallet) return;
-		await navigator.clipboard.writeText(wallet.source);
-		copied = true;
-		setTimeout(() => (copied = false), 1500);
+		menu = false;
+		try {
+			await navigator.clipboard.writeText(wallet.source);
+			actionMessage = t('copied');
+			actionFailed = false;
+		} catch {
+			actionMessage = t('public_info_copy_failed');
+			actionFailed = true;
+		}
+	}
+	function exportPublicWallet() {
+		if (!wallet) return;
+		menu = false;
+		try {
+			const name = wallet.name.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'wallet';
+			downloadJson(`${name}.satsight.json`, walletExport(wallet));
+			actionMessage = t('wallet_exported');
+			actionFailed = false;
+		} catch {
+			actionMessage = t('wallet_export_failed');
+			actionFailed = true;
+		}
 	}
 
 	async function remove() {
@@ -115,22 +137,27 @@
 						aria-label={t('sync_wallet')}><RotateCw size={19} /></button
 					>
 					<div class="menu-wrap">
-						<button class="icon-button" onclick={() => (menu = !menu)} aria-label={t('menu')}
-							><Ellipsis size={21} /></button
+						<button
+							class="icon-button"
+							onclick={() => (menu = !menu)}
+							aria-label={t('menu')}
+							aria-expanded={menu}><Ellipsis size={21} /></button
 						>{#if menu}<div class="context-menu">
-								<button onclick={remove}><Trash2 size={16} /> {t('remove_wallet')}</button>
+								<button onclick={copySource}
+									><Copy size={16} />
+									{wallet?.kind === 'xpub' ? t('copy_xpub') : t('copy_address')}</button
+								>
+								<button onclick={exportPublicWallet}
+									><Download size={16} /> {t('export_wallet')}</button
+								>
+								<button class="danger" onclick={remove}
+									><Trash2 size={16} /> {t('remove_wallet')}</button
+								>
 							</div>{/if}
 					</div>
 				</div>{/snippet}
 		</PageHeader>
 		<section class="wallet-hero" style={`--wallet-color:${wallet.color}`}>
-			<div class="hero-top">
-				<span
-					>{wallet.kind === 'xpub'
-						? t('extended_public_key_wallet')
-						: t('single_address_wallet')}</span
-				>
-			</div>
 			<div class="hero-balance"><strong>{formatBtc(wallet.balance)}</strong><span>BTC</span></div>
 			<p>{formatSats(wallet.balance)} sats</p>
 			<div class="hero-stats">
@@ -146,6 +173,9 @@
 				</div>
 			</div>
 		</section>
+		{#if actionMessage}<p class="sync-message" class:failed={actionFailed} role="status">
+				{actionMessage}
+			</p>{/if}
 		{#if syncMessage}<p class:failed={Boolean(wallet.syncError)} class="sync-message">
 				{syncMessage}
 			</p>{/if}
@@ -162,27 +192,14 @@
 		</div>
 
 		<section class="section-block">
-			<div class="section-title"><h2>{t('public_information')}</h2></div>
+			<div class="section-title"><h2>{t('wallet_information')}</h2></div>
 			<div class="detail-panel">
 				<div>
-					<span>{wallet.kind === 'xpub' ? t('extended_public_key') : t('address')}</span>
-					<button
-						class="copy-value"
-						onclick={copySource}
-						aria-label={copied ? t('copied') : t('copy_public_key_or_address')}
-					>
-						<code>{shortAddress(wallet.source, 14, 12)}</code>
-						{#if copied}<Check size={15} />{:else}<Copy size={15} />{/if}
-					</button>
+					<span>{t('signature_policy')}</span><strong>{walletSignatureLabel(wallet)}</strong>
 				</div>
 				<div>
-					<span>{t('address_type')}</span><strong>{scriptTypeLabel(wallet.scriptType)}</strong>
+					<span>{t('address_type')}</span><strong>{walletScriptLabel(wallet)}</strong>
 				</div>
-				{#if wallet.kind === 'xpub'}<div>
-						<span>{t('descriptor')}</span><code
-							>{shortAddress(walletDescriptor(wallet.source, wallet.scriptType), 20, 14)}</code
-						>
-					</div>{/if}
 			</div>
 		</section>
 

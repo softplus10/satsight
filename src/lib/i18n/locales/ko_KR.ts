@@ -249,5 +249,13 @@ export const ko_KR = {
 	loading_addresses: '주소 불러오는 중…',
 	address_page_failed: '주소를 더 불러오지 못했습니다.',
 	show_address_qr: '주소 QR 보기',
-	load_more: '더 보기'
+	load_more: '더 보기',
+	single_sig: '단일 서명',
+	signature_policy: '서명 방식',
+	wallet_information: '지갑 정보',
+	copy_xpub: 'xpub 복사',
+	export_wallet: '지갑 내보내기',
+	wallet_exported: '공개 지갑 설정을 내보냈습니다.',
+	wallet_export_failed: '지갑을 내보내지 못했습니다.',
+	public_info_copy_failed: '공개키 또는 주소를 복사하지 못했습니다.'
 } satisfies Required<TranslationCatalog>;

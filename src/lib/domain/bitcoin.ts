@@ -213,8 +213,8 @@ export function formatBtc(sats: number, maximumFractionDigits = 8): string {
 	});
 }
 
-export function walletDescriptor(source: string, type: ScriptType): string {
-	const inner = `${cleanSource(source)}/0/*`;
+export function walletDescriptor(source: string, type: ScriptType, branch: 0 | 1 = 0): string {
+	const inner = `${cleanSource(source)}/${branch}/*`;
 	if (type === 'legacy') return `pkh(${inner})`;
 	if (type === 'nested-segwit') return `sh(wpkh(${inner}))`;
 	if (type === 'taproot') return `tr(${inner})`;
