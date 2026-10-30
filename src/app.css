@@ -1475,3 +1475,57 @@ code {
 		animation-iteration-count: 1 !important;
 	}
 }
+
+.address-actions {
+	display: flex;
+	gap: 6px;
+}
+.address-pagination {
+	margin-top: 16px;
+}
+.address-qr-dialog {
+	width: min(420px, calc(100vw - 32px));
+	max-height: calc(100dvh - 40px);
+	overflow-y: auto;
+	padding: 20px;
+	border: 1px solid var(--line);
+	border-radius: 20px;
+	background: var(--surface);
+	color: #f4f4f5;
+}
+.address-qr-dialog::backdrop {
+	background: rgb(0 0 0 / 72%);
+}
+.address-qr-dialog header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	margin-bottom: 16px;
+}
+.address-qr-dialog h2 {
+	margin: 0;
+	font-size: 18px;
+}
+.address-qr-image {
+	display: block;
+	width: 100%;
+	height: auto;
+	margin: 0 auto 16px;
+	border-radius: 10px;
+}
+.full-address {
+	display: block;
+	overflow-wrap: anywhere;
+	margin: 0 0 16px;
+	font-size: 13px;
+	line-height: 1.6;
+	text-align: center;
+}
+.qr-dialog-loading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	min-height: 180px;
+}

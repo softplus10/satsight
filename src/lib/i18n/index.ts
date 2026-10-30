@@ -3,7 +3,7 @@ import { i18n } from './locale.svelte';
 import { translate, type MessageArgs, type MessageKey } from './translate';
 
 export { i18n, setLocale } from './locale.svelte';
-export { DEFAULT_LOCALE, resolveLocale, intlLocale, type Locale } from './catalogs';
+export { DEFAULT_LOCALE, LOCALE_NAMES, resolveLocale, intlLocale, type Locale } from './catalogs';
 export { localeFromUrl, localizedHref } from './url';
 export type { MessageKey, TranslationCatalog } from './translate';
 

@@ -7,6 +7,11 @@ import type { TranslationCatalog } from './translate';
 export const catalogs = { en_US, en_CA, ko_KR } satisfies Record<string, TranslationCatalog>;
 export type Locale = keyof typeof catalogs;
 export const DEFAULT_LOCALE: Locale = 'en_US';
+export const LOCALE_NAMES: Record<Locale, string> = {
+	en_US: 'English (United States)',
+	en_CA: 'English (Canada)',
+	ko_KR: '한국어'
+};
 
 export function resolveLocale(requested?: string | null): Locale {
 	const normalized = requested?.toLowerCase().replaceAll('-', '_');

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { HDKey } from '@scure/bip32';
 import { deriveAddress } from './bitcoin';
-import { buildAddressPool, normalizeGapLimit } from './address-pool';
+import { buildAddressPool, buildAddressPage, normalizeGapLimit } from './address-pool';
 import type { Wallet, WatchedAddress } from './types';
 
 const source = HDKey.fromMasterSeed(new Uint8Array(32).fill(9)).publicExtendedKey;
@@ -52,5 +52,33 @@ describe('address pool', () => {
 		expect(normalizeGapLimit(20.9)).toBe(20);
 		expect(normalizeGapLimit(500)).toBe(50);
 		expect(normalizeGapLimit(Number.NaN)).toBe(20);
+	});
+});
+
+describe('address pages', () => {
+	it('derives later pages independently of the gap window and preserves metadata', () => {
+		const first = buildAddressPage(wallet, 0, 0);
+		const saved = { ...first[0], label: 'Savings', used: true, balance: 100 };
+		const restored = buildAddressPage(wallet, 0, 0, 20, [saved]);
+		const later = buildAddressPage(wallet, 1, 220);
+		expect(restored[0]).toEqual(saved);
+		expect(later).toHaveLength(20);
+		expect(later[0]).toMatchObject({
+			branch: 1,
+			index: 220,
+			address: deriveAddress(source, 'mainnet', 'native-segwit', 1, 220)
+		});
+		expect(later.at(-1)?.index).toBe(239);
+	});
+	it('ends a single-address wallet after its only receive address', () => {
+		const single = { ...wallet, kind: 'address' as const, source: 'single-address' };
+		expect(buildAddressPage(single, 0, 0)).toHaveLength(1);
+		expect(buildAddressPage(single, 0, 1)).toEqual([]);
+		expect(buildAddressPage(single, 1, 0)).toEqual([]);
+	});
+	it('does not derive hardened children or accept unbounded page sizes', () => {
+		expect(buildAddressPage(wallet, 0, 0x80000000)).toEqual([]);
+		expect(() => buildAddressPage(wallet, 0, -1)).toThrow();
+		expect(() => buildAddressPage(wallet, 0, 0, 1000)).toThrow();
 	});
 });

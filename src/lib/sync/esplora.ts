@@ -89,12 +89,16 @@ async function scanBranch(
 	const found: WatchedAddress[] = [];
 	let unused = 0;
 	let index = 0;
-	// This request budget is independent of the gap limit. It currently stops
-	// discovery at index 199 even if no complete unused window was found.
-	const maximum = 200;
+	// Every address exposed in the paginated list must remain watched, even if
+	// there is an unused gap before it. Continue discovery beyond that range
+	// until a complete unused window follows the latest activity.
+	let knownEnd = 0;
+	for (const item of known.values()) {
+		if (item.branch === branch) knownEnd = Math.max(knownEnd, item.index + 1);
+	}
 
-	while (unused < gapLimit && index < maximum) {
-		const batchSize = Math.min(5, maximum - index);
+	while (index < knownEnd || unused < gapLimit) {
+		const batchSize = Math.min(5, Math.max(knownEnd - index, gapLimit - unused));
 		const indexes = Array.from({ length: batchSize }, (_, offset) => index + offset);
 		const batch = await Promise.all(
 			indexes.map((current) =>
@@ -106,7 +110,7 @@ async function scanBranch(
 			// A used address resets the consecutive-unused window for this branch.
 			unused = address.used ? 0 : unused + 1;
 			index += 1;
-			if (unused >= gapLimit) break;
+			if (index >= knownEnd && unused >= gapLimit) break;
 		}
 	}
 	return found;
@@ -214,4 +218,49 @@ export async function syncWatchWallet(
 		addresses,
 		transactions
 	};
+}
+
+/** Verify an unused receive address against Esplora before presenting it for payment. */
+export async function findUnusedReceiveAddress(
+	wallet: Wallet,
+	knownAddresses: WatchedAddress[],
+	settings: AppSettings
+): Promise<{ address: WatchedAddress; scannedAddresses: WatchedAddress[] }> {
+	if (!navigator.onLine) throw new Error(t('receive_requires_network'));
+	const base = esploraApiBase(settings, wallet);
+	if (!/^https?:\/\//.test(base)) throw new Error(t('invalid_api_url'));
+	const receive = knownAddresses.filter((item) => item.walletId === wallet.id && item.branch === 0);
+	if (
+		wallet.kind === 'address' &&
+		(wallet.txCount > 0 || receive.some((item) => item.used || item.txCount > 0))
+	) {
+		throw new Error(t('single_address_already_used'));
+	}
+	// Skip all previously used indexes rather than filling gaps between old payments.
+	let index =
+		wallet.kind === 'address'
+			? 0
+			: receive.reduce(
+					(last, item) =>
+						item.used || item.txCount > 0 || item.balance > 0 ? Math.max(last, item.index) : last,
+					-1
+				) + 1;
+	const scannedAddresses: WatchedAddress[] = [];
+	for (let attempt = 0; attempt < 50; attempt += 1) {
+		const address = await scanAddress(
+			base,
+			wallet,
+			0,
+			index,
+			receive.find((item) => item.index === index)
+		);
+		scannedAddresses.push(address);
+		// A local unused flag alone is insufficient: check both confirmed and mempool activity.
+		if (address.txCount === 0 && address.balance === 0 && address.confirmedBalance === 0) {
+			return { address, scannedAddresses };
+		}
+		if (wallet.kind === 'address') throw new Error(t('single_address_already_used'));
+		index += 1;
+	}
+	throw new Error(t('receive_scan_limit'));
 }

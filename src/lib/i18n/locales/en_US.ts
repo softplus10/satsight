@@ -237,5 +237,23 @@ export const en_US = {
 	show_balance: 'Show balance',
 	qr_frame_progress: '{received} / {total} frames',
 	animated_ur_progress: 'Animated UR · {current} / {total}',
-	page_title: '{title} · SatSight'
+	page_title: '{title} · SatSight',
+	language: 'Language',
+	receive: 'Receive',
+	unused_receive_address: 'Unused receive address',
+	receive_requires_network: 'Connect to the internet to check for an unused receive address.',
+	single_address_already_used:
+		'This address has transaction history. Import an account public key to derive a new receive address.',
+	receive_scan_limit: 'No unused address found in this scan. Sync the wallet and try again.',
+	receive_address_failed: 'Could not prepare a receive address.',
+	address_qr_failed: 'Could not generate the address QR code.',
+	address_qr_alt: 'QR code for {address}',
+	address_copy_failed: 'Could not copy the address.',
+	close: 'Close',
+	checking_receive_address: 'Checking for an unused address…',
+	invalid_address_page: 'Invalid address page range.',
+	loading_addresses: 'Loading addresses…',
+	address_page_failed: 'Could not load more addresses.',
+	show_address_qr: 'Show address QR',
+	load_more: 'Load more'
 } as const;

@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, i18n, LOCALE_NAMES } from '$lib/i18n';
+	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { version as appVersion } from '../../../package.json';
 	import { Check, Globe2 } from '@lucide/svelte';
@@ -17,6 +19,12 @@
 		saved = true;
 		setTimeout(() => (saved = false), 1500);
 	}
+	async function changeLanguage(event: Event) {
+		const locale = (event.currentTarget as HTMLSelectElement).value;
+		const url = new URL(page.url);
+		url.searchParams.set('lang', locale);
+		await goto(`${url.pathname}${url.search}${url.hash}`, { keepFocus: true, noScroll: true });
+	}
 </script>
 
 <svelte:head><title>{t('page_title', { title: t('settings') })}</title></svelte:head>
@@ -25,6 +33,14 @@
 	<section class="settings-section">
 		<h2>{t('display')}</h2>
 		<div class="settings-panel">
+			<label>
+				<span><strong>{t('language')}</strong></span>
+				<select value={i18n.locale} onchange={changeLanguage}>
+					{#each Object.entries(LOCALE_NAMES) as [code, name] (code)}
+						<option value={code}>{name}</option>
+					{/each}
+				</select>
+			</label>
 			<label
 				><span><strong>{t('bitcoin_unit')}</strong><small>{t('default_balance_unit')}</small></span
 				><select bind:value={form.currency}

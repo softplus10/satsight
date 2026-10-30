@@ -230,5 +230,24 @@ export const ko_KR = {
 	show_balance: '잔액 표시',
 	qr_frame_progress: '{received} / {total} 프레임',
 	animated_ur_progress: '애니메이션 UR · {current} / {total}',
-	page_title: '{title} · SatSight'
+	page_title: '{title} · SatSight',
+	language: '언어',
+	receive: '받기',
+	unused_receive_address: '사용된 적 없는 입금 주소',
+	receive_requires_network: '미사용 입금 주소를 확인하려면 인터넷에 연결하세요.',
+	single_address_already_used:
+		'이 주소에는 거래 이력이 있습니다. 새 입금 주소를 파생하려면 계정 공개키를 가져오세요.',
+	receive_scan_limit:
+		'이번 탐색에서 미사용 주소를 찾지 못했습니다. 지갑을 동기화하고 다시 시도하세요.',
+	receive_address_failed: '입금 주소를 준비하지 못했습니다.',
+	address_qr_failed: '주소 QR 코드를 생성하지 못했습니다.',
+	address_qr_alt: '{address} 주소의 QR 코드',
+	address_copy_failed: '주소를 복사하지 못했습니다.',
+	close: '닫기',
+	checking_receive_address: '미사용 주소 확인 중…',
+	invalid_address_page: '주소 페이지 범위가 올바르지 않습니다.',
+	loading_addresses: '주소 불러오는 중…',
+	address_page_failed: '주소를 더 불러오지 못했습니다.',
+	show_address_qr: '주소 QR 보기',
+	load_more: '더 보기'
 } satisfies Required<TranslationCatalog>;

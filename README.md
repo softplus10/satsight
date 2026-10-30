@@ -8,6 +8,8 @@ A Bitcoin watch-only wallet built with SvelteKit, Capacitor, and Tauri. SatSight
 - Legacy, nested SegWit, native SegWit, and Taproot address derivation.
 - QR imports for addresses, BIP21, key origins, supported single-key descriptors, Specter fragments, and SeedSigner animated UR.
 - Manual or startup sync through an Esplora-compatible server.
+- Receive with a server-verified unused address and QR code; view any address as a QR popup.
+- Receive/change address lists load additional derived addresses as you scroll.
 - PSBT creation, external signing via animated QR, original-transaction comparison, and broadcasting.
 - IndexedDB storage and a service worker for offline access to saved data.
 - Static web/PWA, Capacitor Android/iOS, and Tauri desktop projects.
@@ -60,6 +62,8 @@ The default server is Blockstream Esplora. You can configure your own Esplora AP
 The Cloudflare configuration serves `build/` as Workers Static Assets with an SPA fallback. There is no application server Worker.
 
 The demo is deployed as `satsight-demo` in the **Hanseung Kim** Cloudflare account at <https://satsight-demo.hskim.dev>. `wrangler.jsonc` pins the account and custom domain. Authenticate Wrangler with access to that account before deploying; API credentials must stay outside the repository.
+
+Cloudflare Workers Builds watches `softplus10/satsight` on `main` and automatically deploys successful builds. It uses Node.js 24 and the existing SatSight build token stored in Cloudflare. The build command runs type checks, lint, tests, and the production build before `npx wrangler deploy`. Build triggers and credentials are managed in Cloudflare; no deployment secret is committed to GitHub.
 
 ```sh
 npm run cf:dev

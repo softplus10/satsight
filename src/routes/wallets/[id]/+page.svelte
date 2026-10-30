@@ -3,11 +3,22 @@
 	import { scriptTypeLabel } from '$lib/i18n/address-label';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { Copy, Ellipsis, ExternalLink, QrCode, RotateCw, Send, Trash2 } from '@lucide/svelte';
+	import {
+		ArrowDownLeft,
+		Check,
+		Copy,
+		Ellipsis,
+		ExternalLink,
+		QrCode,
+		RotateCw,
+		Send,
+		Trash2
+	} from '@lucide/svelte';
 	import { goto } from '$app/navigation';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import TransactionRow from '$lib/components/TransactionRow.svelte';
+	import AddressQrDialog from '$lib/components/AddressQrDialog.svelte';
 	import { formatBtc, formatSats, shortAddress, walletDescriptor } from '$lib/domain/bitcoin';
 	import type { Wallet, WatchedAddress } from '$lib/domain/types';
 	import { walletState } from '$lib/state/wallets.svelte';
@@ -18,6 +29,11 @@
 	let copied = $state(false);
 	let menu = $state(false);
 	let syncMessage = $state('');
+	let receiveOpen = $state(false);
+	let receiveLoading = $state(false);
+	let receiveValue = $state('');
+	let receiveError = $state('');
+	let receiveRequest = 0;
 	const transactions = $derived(
 		walletState.transactions.filter((item) => item.walletId === page.params.id)
 	);
@@ -59,6 +75,27 @@
 		const base =
 			wallet.network === 'mainnet' ? 'https://mempool.space' : 'https://mempool.space/testnet';
 		void openExternal(`${base}/address/${addresses[0].address}`);
+	}
+	async function receive() {
+		if (!wallet) return;
+		const request = ++receiveRequest;
+		receiveOpen = true;
+		receiveLoading = true;
+		receiveError = '';
+		receiveValue = '';
+		try {
+			const address = await walletState.receiveAddress(wallet.id);
+			if (request === receiveRequest) receiveValue = address.address;
+		} catch (cause) {
+			if (request === receiveRequest)
+				receiveError = cause instanceof Error ? cause.message : t('receive_address_failed');
+		} finally {
+			if (request === receiveRequest) receiveLoading = false;
+		}
+	}
+	function closeReceive() {
+		receiveOpen = false;
+		receiveRequest += 1; // Ignore a lookup that finishes after its dialog was closed.
 	}
 </script>
 
@@ -114,15 +151,12 @@
 			</p>{/if}
 
 		<div class="detail-actions">
+			<button onclick={receive}><ArrowDownLeft size={20} /><span>{t('receive')}</span></button>
 			{#if wallet.kind === 'xpub'}<a href={localizedHref(`/wallets/${wallet.id}/send`)}
 					><Send size={20} /><span>{t('send')}</span></a
 				>{/if}
 			<a href={localizedHref(`/wallets/${wallet.id}/addresses`)}
 				><QrCode size={20} /><span>{t('addresses')}</span></a
-			>
-			<button onclick={copySource}
-				><Copy size={20} /><span>{copied ? t('copied') : t('copy_public_key_or_address')}</span
-				></button
 			>
 			<button onclick={openExplorer}><ExternalLink size={20} /><span>{t('explorer')}</span></button>
 		</div>
@@ -131,9 +165,15 @@
 			<div class="section-title"><h2>{t('public_information')}</h2></div>
 			<div class="detail-panel">
 				<div>
-					<span>{wallet.kind === 'xpub' ? t('extended_public_key') : t('address')}</span><code
-						>{shortAddress(wallet.source, 14, 12)}</code
+					<span>{wallet.kind === 'xpub' ? t('extended_public_key') : t('address')}</span>
+					<button
+						class="copy-value"
+						onclick={copySource}
+						aria-label={copied ? t('copied') : t('copy_public_key_or_address')}
 					>
+						<code>{shortAddress(wallet.source, 14, 12)}</code>
+						{#if copied}<Check size={15} />{:else}<Copy size={15} />{/if}
+					</button>
 				</div>
 				<div>
 					<span>{t('address_type')}</span><strong>{scriptTypeLabel(wallet.scriptType)}</strong>
@@ -169,3 +209,15 @@
 		/>
 	{/if}
 </main>
+
+{#if receiveOpen}
+	<AddressQrDialog
+		title={t('receive')}
+		address={receiveValue}
+		description={t('unused_receive_address')}
+		loading={receiveLoading}
+		error={receiveError}
+		onClose={closeReceive}
+		onRetry={receive}
+	/>
+{/if}

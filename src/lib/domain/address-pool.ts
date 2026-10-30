@@ -1,4 +1,5 @@
 import { deriveAddress } from './bitcoin';
+import { t } from '$lib/i18n';
 import type { Wallet, WatchedAddress } from './types';
 
 export const MIN_GAP_LIMIT = 5;
@@ -52,4 +53,36 @@ export function buildAddressPool(
 		}
 	}
 	return [...known.values()].sort((a, b) => a.branch - b.branch || a.index - b.index);
+}
+
+/** Derive one bounded page; pagination does not change the synchronization gap limit. */
+export function buildAddressPage(
+	wallet: Wallet,
+	branch: 0 | 1,
+	start: number,
+	count = 20,
+	knownAddresses: WatchedAddress[] = []
+): WatchedAddress[] {
+	const end = 0x80000000; // Public child derivation stops before hardened indexes.
+	if (
+		!Number.isSafeInteger(start) ||
+		start < 0 ||
+		start > end ||
+		!Number.isSafeInteger(count) ||
+		count < 1 ||
+		count > 50
+	) {
+		throw new Error(t('invalid_address_page'));
+	}
+	if (wallet.kind === 'address' && (branch !== 0 || start !== 0)) return [];
+	const known = new Map(
+		knownAddresses
+			.filter((item) => item.walletId === wallet.id && item.branch === branch)
+			.map((item) => [item.index, item])
+	);
+	const size = wallet.kind === 'address' ? 1 : Math.min(count, end - start);
+	return Array.from({ length: size }, (_, offset) => {
+		const index = start + offset;
+		return known.get(index) ?? emptyAddress(wallet, branch, index);
+	});
 }

@@ -1,5 +1,17 @@
 # CI and releases
 
+## Web demo deployments
+
+Cloudflare Workers Builds automatically deploys `main` from `softplus10/satsight` to the `satsight-demo` Worker in the Hanseung Kim account. The public domain is <https://satsight-demo.hskim.dev>.
+
+- Node.js: 24.
+- Root directory: `/`.
+- Build command: `npm run check && npm run lint && npm test && npm run build`.
+- Deploy command: `npx wrangler deploy`.
+- Authentication: the existing SatSight build token stored by Cloudflare.
+
+Manage the repository connection and production trigger in the Worker's Builds settings. Failed checks prevent deployment. Native package releases below remain tag-triggered and are independent of web demo deployments.
+
 ## Workflow stages
 
 1. Pull requests and pushes to `main`: install dependencies, run Svelte/TypeScript checks, lint, and Vitest.

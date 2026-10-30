@@ -1,12 +1,12 @@
 import { t } from '$lib/i18n';
 import { browser } from '$app/environment';
-import { buildAddressPool } from '$lib/domain/address-pool';
+import { buildAddressPool, buildAddressPage } from '$lib/domain/address-pool';
 import { parseExtendedPublicKey, parseWalletQr } from '$lib/domain/bitcoin';
 import type { AppSettings, Wallet, WalletDraft, WalletTransaction } from '$lib/domain/types';
 import { DEFAULT_SETTINGS } from '$lib/domain/types';
 import * as repository from '$lib/db/database';
 import { createLocalId } from '$lib/platform/id';
-import { syncWatchWallet } from '$lib/sync/esplora';
+import { syncWatchWallet, findUnusedReceiveAddress } from '$lib/sync/esplora';
 
 const COLORS = ['#f5a623', '#5f8cff', '#9b7cff', '#43c59e', '#ef6f6c', '#57b8ff'];
 
@@ -75,6 +75,25 @@ class WalletState {
 	async saveSettings(settings: AppSettings) {
 		await repository.putSettings(settings);
 		this.settings = settings;
+	}
+
+	async receiveAddress(id: string) {
+		const wallet = this.wallets.find((item) => item.id === id);
+		if (!wallet) throw new Error(t('wallet_not_found'));
+		const known = await repository.listAddresses(id);
+		const result = await findUnusedReceiveAddress(wallet, known, this.settings);
+		if (!this.wallets.some((item) => item.id === id)) throw new Error(t('wallet_not_found'));
+		await repository.putAddresses(result.scannedAddresses);
+		return result.address;
+	}
+
+	async addressPage(id: string, branch: 0 | 1, start: number, count = 20) {
+		const wallet = this.wallets.find((item) => item.id === id);
+		if (!wallet) throw new Error(t('wallet_not_found'));
+		const known = await repository.listAddresses(id);
+		const page = buildAddressPage(wallet, branch, start, count, known);
+		await repository.putAddresses(page);
+		return page;
 	}
 
 	async connectKeyOrigin(id: string, exportedKey: string) {
