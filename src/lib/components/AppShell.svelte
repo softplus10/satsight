@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, localizedHref } from '$lib/i18n';
 	import { onMount, type Snippet } from 'svelte';
 	import { page } from '$app/state';
 	import { House, Landmark, ListTree, Settings, WifiOff } from '@lucide/svelte';
@@ -41,12 +41,12 @@
 
 <div class="app-shell">
 	<aside class="sidebar">
-		<a class="brand" href="/" aria-label={t('satsight_home')}
+		<a class="brand" href={localizedHref('/')} aria-label={t('satsight_home')}
 			><span>₿</span><strong>SatSight</strong></a
 		>
 		<nav aria-label={t('main_navigation')}>
 			{#each navigation as item (item.href)}
-				<a href={item.href} class:active={active(item.href)}>
+				<a href={localizedHref(item.href)} class:active={active(item.href)}>
 					<item.icon size={19} strokeWidth={2} />
 					<span>{item.label}</span>
 				</a>
@@ -63,7 +63,7 @@
 
 	<nav class="bottom-nav" aria-label={t('main_navigation')}>
 		{#each navigation as item (item.href)}
-			<a href={item.href} class:active={active(item.href)}>
+			<a href={localizedHref(item.href)} class:active={active(item.href)}>
 				<item.icon size={21} strokeWidth={active(item.href) ? 2.5 : 1.8} />
 				<span>{item.label}</span>
 			</a>

@@ -11,7 +11,7 @@ A Bitcoin watch-only wallet built with SvelteKit, Capacitor, and Tauri. SatSight
 - PSBT creation, external signing via animated QR, original-transaction comparison, and broadcasting.
 - IndexedDB storage and a service worker for offline access to saved data.
 - Static web/PWA, Capacitor Android/iOS, and Tauri desktop projects.
-- English UI with typed translation keys, interpolation, plurals, and locale-aware formatting. See [Internationalization](docs/I18N.md).
+- US English, Canadian English, and Korean interfaces selected with `?lang=en_US`, `?lang=en_CA`, or `?lang=ko_KR`, with typed messages and locale-aware formatting. See [Internationalization](docs/I18N.md).
 
 ## Routes
 
@@ -47,7 +47,7 @@ npm run lint
 npm run build
 ```
 
-Domain code lives in `src/lib/domain/`, network clients in `src/lib/sync/`, IndexedDB access in `src/lib/db/`, and shared Svelte state in `src/lib/state/`. User-facing messages live in `src/lib/i18n/en.ts`.
+Domain code lives in `src/lib/domain/`, network clients in `src/lib/sync/`, IndexedDB access in `src/lib/db/`, and shared Svelte state in `src/lib/state/`. User-facing messages live in `src/lib/i18n/locales/`.
 
 ## Offline access and privacy
 

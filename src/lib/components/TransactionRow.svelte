@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t, formatDate } from '$lib/i18n';
+	import { t, formatDate, localizedHref } from '$lib/i18n';
 	import { ArrowDownLeft, ArrowUpRight, RefreshCw } from '@lucide/svelte';
 	import { formatSats, shortAddress } from '$lib/domain/bitcoin';
 	import type { WalletTransaction } from '$lib/domain/types';
@@ -28,7 +28,7 @@
 	);
 </script>
 
-<a class="transaction-row" href={`/transactions/${transaction.id}`}>
+<a class="transaction-row" href={localizedHref(`/transactions/${transaction.id}`)}>
 	<div class:received={transaction.direction === 'received'} class="tx-icon">
 		<Icon size={19} />
 	</div>

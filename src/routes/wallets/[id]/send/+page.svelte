@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, localizedHref } from '$lib/i18n';
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
@@ -152,7 +152,7 @@
 			title={t('sending_requires_an_extended_public_key')}
 			description={t('send_public_key_help')}
 			actionLabel={t('back_to_wallet')}
-			href={`/wallets/${wallet.id}`}
+			href={localizedHref(`/wallets/${wallet.id}`)}
 		/>
 	{:else if wallet && !wallet.keyOrigin}
 		<section class="form-card origin-connect">
@@ -283,7 +283,9 @@
 					<code>{shortAddress(broadcastedTxid, 16, 16)}</code>
 				</div>
 				<div class="send-buttons">
-					<button class="button secondary" onclick={() => goto(`/wallets/${wallet?.id}`)}
+					<button
+						class="button secondary"
+						onclick={() => goto(localizedHref(`/wallets/${wallet?.id}`))}
 						>{t('back_to_wallet')}</button
 					>
 					<button class="button primary" onclick={openTransaction}
@@ -317,7 +319,7 @@
 			title={t('wallet_not_found')}
 			description={t('wallet_not_found_help')}
 			actionLabel={t('wallets')}
-			href="/wallets"
+			href={localizedHref('/wallets')}
 		/>
 	{/if}
 </main>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { localizedHref } from '$lib/i18n';
 	import { Telescope } from '@lucide/svelte';
 	let {
 		title,
@@ -12,5 +13,6 @@
 	<div class="empty-icon"><Telescope size={27} /></div>
 	<h2>{title}</h2>
 	<p>{description}</p>
-	{#if actionLabel && href}<a class="button primary" {href}>{actionLabel}</a>{/if}
+	{#if actionLabel && href}<a class="button primary" href={localizedHref(href)}>{actionLabel}</a
+		>{/if}
 </div>

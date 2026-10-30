@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, localizedHref } from '$lib/i18n';
 	import { scriptTypeLabel } from '$lib/i18n/address-label';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
@@ -38,7 +38,7 @@
 	async function remove() {
 		if (!wallet || !confirm(t('remove_wallet_confirm', { name: wallet.name }))) return;
 		await walletState.removeWallet(wallet.id);
-		await goto('/wallets');
+		await goto(localizedHref('/wallets'));
 	}
 
 	async function sync() {
@@ -114,10 +114,10 @@
 			</p>{/if}
 
 		<div class="detail-actions">
-			{#if wallet.kind === 'xpub'}<a href={`/wallets/${wallet.id}/send`}
+			{#if wallet.kind === 'xpub'}<a href={localizedHref(`/wallets/${wallet.id}/send`)}
 					><Send size={20} /><span>{t('send')}</span></a
 				>{/if}
-			<a href={`/wallets/${wallet.id}/addresses`}
+			<a href={localizedHref(`/wallets/${wallet.id}/addresses`)}
 				><QrCode size={20} /><span>{t('addresses')}</span></a
 			>
 			<button onclick={copySource}
@@ -149,7 +149,7 @@
 		<section class="section-block">
 			<div class="section-title">
 				<h2>{t('recent_transactions')}</h2>
-				<a href="/transactions">{t('view_all')}</a>
+				<a href={localizedHref('/transactions')}>{t('view_all')}</a>
 			</div>
 			{#if transactions.length}<div class="panel">
 					{#each transactions.slice(0, 5) as transaction (transaction.id)}<TransactionRow
@@ -165,7 +165,7 @@
 			title={t('wallet_not_found')}
 			description={t('wallet_not_found_help')}
 			actionLabel={t('wallets')}
-			href="/wallets"
+			href={localizedHref('/wallets')}
 		/>
 	{/if}
 </main>

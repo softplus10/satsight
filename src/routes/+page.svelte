@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, localizedHref } from '$lib/i18n';
 	import { ArrowUpRight, Eye, Plus, RotateCw } from '@lucide/svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import TransactionRow from '$lib/components/TransactionRow.svelte';
@@ -46,8 +46,10 @@
 	</section>
 
 	<section class="quick-actions">
-		<a href="/wallets/new"><span><Plus size={21} /></span><strong>{t('add_wallet')}</strong></a>
-		<a href="/transactions"
+		<a href={localizedHref('/wallets/new')}
+			><span><Plus size={21} /></span><strong>{t('add_wallet')}</strong></a
+		>
+		<a href={localizedHref('/transactions')}
 			><span><ArrowUpRight size={21} /></span><strong>{t('transactions')}</strong></a
 		>
 	</section>
@@ -55,7 +57,7 @@
 	<section class="section-block">
 		<div class="section-title">
 			<h2>{t('wallets')}</h2>
-			<a href="/wallets">{t('view_all')}</a>
+			<a href={localizedHref('/wallets')}>{t('view_all')}</a>
 		</div>
 		{#if walletState.wallets.length}
 			<div class="card-list">
@@ -69,7 +71,7 @@
 				title={t('no_wallets')}
 				description={t('add_wallet_help')}
 				actionLabel={t('add_wallet')}
-				href="/wallets/new"
+				href={localizedHref('/wallets/new')}
 			/>
 		{:else}
 			<div class="skeleton-list"><i></i><i></i></div>
@@ -85,7 +87,7 @@
 		<section class="section-block">
 			<div class="section-title">
 				<h2>{t('recent_transactions')}</h2>
-				<a href="/transactions">{t('view_all')}</a>
+				<a href={localizedHref('/transactions')}>{t('view_all')}</a>
 			</div>
 			<div class="panel">
 				{#each walletState.transactions.slice(0, 4) as transaction (transaction.id)}<TransactionRow

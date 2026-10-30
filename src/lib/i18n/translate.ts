@@ -1,11 +1,11 @@
-import { en } from './en';
+import { en_US } from './locales/en_US';
 
-export type MessageKey = keyof typeof en;
+export type MessageKey = keyof typeof en_US;
 export type PluralMessage = { other: string } & Partial<Record<Intl.LDMLPluralRule, string>>;
 export type TranslationCatalog = Partial<Record<MessageKey, string | PluralMessage>>;
-type SourceMessage<K extends MessageKey> = (typeof en)[K] extends string
-	? (typeof en)[K]
-	: (typeof en)[K] extends { other: infer Text extends string }
+type SourceMessage<K extends MessageKey> = (typeof en_US)[K] extends string
+	? (typeof en_US)[K]
+	: (typeof en_US)[K] extends { other: infer Text extends string }
 		? Text
 		: never;
 type Placeholders<Text extends string> = Text extends `${string}{${infer Name}}${infer Rest}`
@@ -23,13 +23,13 @@ export function translate<K extends MessageKey>(
 	...args: MessageArgs<K>
 ): string {
 	const params = args[0] ?? {};
-	const message: string | PluralMessage = catalog[key] ?? en[key];
+	const message: string | PluralMessage = catalog[key] ?? en_US[key];
 	let text: string;
 	if (typeof message === 'string') {
 		text = message;
 	} else {
 		// Missing translations use English plural rules as well as English text.
-		const language = catalog[key] ? locale : 'en';
+		const language = catalog[key] ? locale.replaceAll('_', '-') : 'en-US';
 		const category = new Intl.PluralRules(language).select(Number(params.count));
 		text = message[category] ?? message.other;
 	}

@@ -1,15 +1,22 @@
-import { en } from './en';
+import { en_US } from './locales/en_US';
+import { en_CA } from './locales/en_CA';
+import { ko_KR } from './locales/ko_KR';
 import type { TranslationCatalog } from './translate';
 
 // Register additional language catalogs here. Missing messages fall back to English.
-export const catalogs: Record<string, TranslationCatalog> = { en };
-export const DEFAULT_LOCALE = 'en';
+export const catalogs = { en_US, en_CA, ko_KR } satisfies Record<string, TranslationCatalog>;
+export type Locale = keyof typeof catalogs;
+export const DEFAULT_LOCALE: Locale = 'en_US';
 
-export function resolveLocale(requested: string): string {
-	const normalized = requested.toLowerCase().replaceAll('_', '-');
+export function resolveLocale(requested?: string | null): Locale {
+	const normalized = requested?.toLowerCase().replaceAll('-', '_');
 	return (
-		Object.keys(catalogs).find((locale) => locale.toLowerCase() === normalized) ??
-		Object.keys(catalogs).find((locale) => locale.toLowerCase() === normalized.split('-')[0]) ??
+		(Object.keys(catalogs) as Locale[]).find((locale) => locale.toLowerCase() === normalized) ??
 		DEFAULT_LOCALE
 	);
+}
+
+/** Intl and HTML use BCP 47 tags, while application URLs use language_REGION. */
+export function intlLocale(locale: string): string {
+	return locale.replaceAll('_', '-');
 }

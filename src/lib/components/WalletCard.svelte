@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, localizedHref } from '$lib/i18n';
 	import { ChevronRight } from '@lucide/svelte';
 	import { formatBtc, formatSats } from '$lib/domain/bitcoin';
 	import type { Wallet } from '$lib/domain/types';
 	let { wallet, compact = false }: { wallet: Wallet; compact?: boolean } = $props();
 </script>
 
-<a class:compact class="wallet-card" href={`/wallets/${wallet.id}`}>
+<a class:compact class="wallet-card" href={localizedHref(`/wallets/${wallet.id}`)}>
 	<div class="wallet-icon" style={`--wallet-color:${wallet.color}`}><span></span></div>
 	<div class="wallet-main">
 		<div class="wallet-name">

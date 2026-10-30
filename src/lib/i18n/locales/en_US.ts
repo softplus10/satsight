@@ -1,6 +1,6 @@
 // English is the source catalog. Translate complete messages so each locale can
 // choose its own word order. Keep protocol identifiers and units unchanged.
-export const en = {
+export const en_US = {
 	wallet_count: {
 		one: '{count} wallet',
 		other: '{count} wallets'

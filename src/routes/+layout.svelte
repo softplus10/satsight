@@ -1,8 +1,13 @@
 <script lang="ts">
 	import '../app.css';
-	import { i18n } from '$lib/i18n';
+	import { page } from '$app/state';
+	import { i18n, intlLocale, localeFromUrl, setLocale } from '$lib/i18n';
+	// The URL is the source of truth, including query-only and history navigation.
+	$effect.pre(() => {
+		setLocale(localeFromUrl(page.url));
+	});
 	$effect(() => {
-		document.documentElement.lang = i18n.locale;
+		document.documentElement.lang = intlLocale(i18n.locale);
 	});
 	import AppShell from '$lib/components/AppShell.svelte';
 	let { children } = $props();

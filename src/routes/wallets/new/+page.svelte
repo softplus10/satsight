@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, localizedHref } from '$lib/i18n';
 	import { scriptTypeLabel } from '$lib/i18n/address-label';
 	import { goto } from '$app/navigation';
 	import { KeyRound, MapPin, ScanLine, ShieldCheck } from '@lucide/svelte';
@@ -51,7 +51,7 @@
 				source,
 				keyOrigin
 			});
-			await goto(`/wallets/${wallet.id}`);
+			await goto(localizedHref(`/wallets/${wallet.id}`));
 		} catch (cause) {
 			error = cause instanceof Error ? cause.message : t('wallet_save_failed');
 		} finally {

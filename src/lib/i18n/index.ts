@@ -1,9 +1,10 @@
-import { catalogs } from './catalogs';
+import { catalogs, intlLocale } from './catalogs';
 import { i18n } from './locale.svelte';
 import { translate, type MessageArgs, type MessageKey } from './translate';
 
 export { i18n, setLocale } from './locale.svelte';
-export { DEFAULT_LOCALE, resolveLocale } from './catalogs';
+export { DEFAULT_LOCALE, resolveLocale, intlLocale, type Locale } from './catalogs';
+export { localeFromUrl, localizedHref } from './url';
 export type { MessageKey, TranslationCatalog } from './translate';
 
 export function t<K extends MessageKey>(key: K, ...args: MessageArgs<K>): string {
@@ -11,9 +12,9 @@ export function t<K extends MessageKey>(key: K, ...args: MessageArgs<K>): string
 }
 
 export function formatNumber(value: number, options?: Intl.NumberFormatOptions): string {
-	return new Intl.NumberFormat(i18n.locale, options).format(value);
+	return new Intl.NumberFormat(intlLocale(i18n.locale), options).format(value);
 }
 
 export function formatDate(value: number | Date, options?: Intl.DateTimeFormatOptions): string {
-	return new Intl.DateTimeFormat(i18n.locale, options).format(value);
+	return new Intl.DateTimeFormat(intlLocale(i18n.locale), options).format(value);
 }

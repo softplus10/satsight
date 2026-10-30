@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, localizedHref } from '$lib/i18n';
 	import { ArrowLeft } from '@lucide/svelte';
 	let {
 		title,
@@ -12,7 +12,7 @@
 
 <header class="page-header">
 	<div class="page-title-row">
-		{#if back}<a class="icon-button back" href={back} aria-label={t('back')}
+		{#if back}<a class="icon-button back" href={localizedHref(back)} aria-label={t('back')}
 				><ArrowLeft size={21} /></a
 			>{/if}
 		<div>

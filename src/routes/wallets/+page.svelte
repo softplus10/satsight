@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { t } from '$lib/i18n';
+	import { t, localizedHref } from '$lib/i18n';
 	import { Plus } from '@lucide/svelte';
 	import EmptyState from '$lib/components/EmptyState.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -10,7 +10,7 @@
 <svelte:head><title>{t('page_title', { title: t('wallets') })}</title></svelte:head>
 <main class="page">
 	<PageHeader title={t('wallets')}>
-		{#snippet action()}<a class="button small primary" href="/wallets/new"
+		{#snippet action()}<a class="button small primary" href={localizedHref('/wallets/new')}
 				><Plus size={17} /> {t('add')}</a
 			>{/snippet}
 	</PageHeader>
@@ -23,7 +23,7 @@
 			title={t('no_wallets')}
 			description={t('add_wallet_help')}
 			actionLabel={t('add_wallet')}
-			href="/wallets/new"
+			href={localizedHref('/wallets/new')}
 		/>
 	{/if}
 </main>
