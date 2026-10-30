@@ -1,7 +1,15 @@
 {
 	"$schema": "./node_modules/wrangler/config-schema.json",
-	"name": "satsight",
-	"compatibility_date": "2026-09-02",
+	"name": "satsight-demo",
+	"account_id": "25f3a2266da8c4ddd0b0115a2fff4450",
+	"compatibility_date": "2026-10-30",
+	"workers_dev": false,
+	"routes": [
+		{
+			"pattern": "satsight-demo.hskim.dev",
+			"custom_domain": true
+		}
+	],
 	"assets": {
 		"directory": "./build",
 		"not_found_handling": "single-page-application"

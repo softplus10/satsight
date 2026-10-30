@@ -59,6 +59,8 @@ The default server is Blockstream Esplora. You can configure your own Esplora AP
 
 The Cloudflare configuration serves `build/` as Workers Static Assets with an SPA fallback. There is no application server Worker.
 
+The demo is deployed as `satsight-demo` in the **Hanseung Kim** Cloudflare account at <https://satsight-demo.hskim.dev>. `wrangler.jsonc` pins the account and custom domain. Authenticate Wrangler with access to that account before deploying; API credentials must stay outside the repository.
+
 ```sh
 npm run cf:dev
 npm run deploy
